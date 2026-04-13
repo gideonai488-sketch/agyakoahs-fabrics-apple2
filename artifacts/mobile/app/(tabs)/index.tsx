@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -21,15 +21,12 @@ import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import { CATEGORIES, PRODUCTS } from "@/data/products";
 import { fetchProducts } from "@/lib/db";
-import { getProductImageUrl } from "@/lib/supabase";
 
 const { width, height } = Dimensions.get("window");
 const HERO_HEIGHT = Math.min(height * 0.58, 480);
 const THUMB_W = 110;
 const THUMB_H = 160;
 
-const TRENDING = PRODUCTS.slice(0, 6);
-const HERO_PRODUCTS = [PRODUCTS[1], PRODUCTS[4], PRODUCTS[7]].filter(Boolean);
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -79,14 +76,27 @@ export default function HomeScreen() {
 
   const allProducts = dbProducts.length > 0 ? dbProducts : PRODUCTS;
 
+  // Pick top 5 products for the hero — prefer badged/hot products, then fall back to first items
+  const heroProducts = useMemo(() => {
+    const badged = allProducts.filter((p: any) => p.badge === "hot" || p.badge === "dr-recommended");
+    const pool = badged.length >= 3 ? badged : allProducts;
+    return pool.slice(0, 5);
+  }, [allProducts]);
+
+  // Top 8 by sold count for the Trending Now row
+  const trending = useMemo(() => {
+    return [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 8);
+  }, [allProducts]);
+
   const filteredProducts =
     selectedCategory === "all"
       ? allProducts
       : allProducts.filter((p) => p.category === selectedCategory);
 
   useEffect(() => {
+    if (heroProducts.length === 0) return;
     const interval = setInterval(() => {
-      const next = (heroIndex + 1) % HERO_PRODUCTS.length;
+      const next = (heroIndex + 1) % heroProducts.length;
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 400,
@@ -102,9 +112,9 @@ export default function HomeScreen() {
       });
     }, 5000);
     return () => clearInterval(interval);
-  }, [heroIndex]);
+  }, [heroIndex, heroProducts.length]);
 
-  const currentHero = HERO_PRODUCTS[heroIndex] ?? PRODUCTS[0];
+  const currentHero = heroProducts[heroIndex] ?? heroProducts[0] ?? PRODUCTS[0];
 
   function formatSold(n: number) {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -452,11 +462,11 @@ export default function HomeScreen() {
               <Text style={s.heroDot}>•</Text>
               <Text style={s.heroRatingText}>{formatSold(currentHero.sold)} sold</Text>
               <Text style={s.heroDot}>•</Text>
-              <Text style={s.heroPrice}>${currentHero.price.toFixed(2)}</Text>
+              <Text style={s.heroPrice}>GH₵{currentHero.price.toFixed(2)}</Text>
             </View>
 
             <View style={s.heroCatRow}>
-              {currentHero.tags.slice(0, 3).map((tag) => (
+              {[currentHero.category, ...(((currentHero as any).badge && [(currentHero as any).badge]) || [])].filter(Boolean).slice(0, 3).map((tag) => (
                 <View key={tag} style={s.heroCatTag}>
                   <Text style={s.heroCatText}>{tag}</Text>
                 </View>
@@ -491,7 +501,7 @@ export default function HomeScreen() {
 
           {/* Hero dots */}
           <View style={s.heroDots}>
-            {HERO_PRODUCTS.map((_, i) => (
+            {heroProducts.map((_, i) => (
               <View
                 key={i}
                 style={[
@@ -515,7 +525,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <FlatList
-            data={TRENDING}
+            data={trending}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={s.thumbList}
@@ -598,11 +608,11 @@ export default function HomeScreen() {
           </View>
 
           <View style={s.productsGrid}>
-            {filteredProducts.map((product, i) => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                staffPick={i === 0 || i === 3}
+                staffPick={(product as any).badge === "dr-recommended"}
               />
             ))}
           </View>
