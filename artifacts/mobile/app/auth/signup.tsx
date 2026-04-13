@@ -56,7 +56,7 @@ export default function SignupScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
-        colors={["#FF4500", "#FF6B35"]}
+        colors={["#1F8C6B", "#27A87E"]}
         style={{
           paddingTop: insets.top + 30,
           paddingBottom: 30,
@@ -124,7 +124,7 @@ export default function SignupScreen() {
           disabled={isLoading}
           style={{ borderRadius: 16, overflow: "hidden", marginBottom: 20 }}
         >
-          <LinearGradient colors={["#FF4500", "#FF6B35"]} style={{ paddingVertical: 16, alignItems: "center" }}>
+          <LinearGradient colors={["#1F8C6B", "#27A87E"]} style={{ paddingVertical: 16, alignItems: "center" }}>
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -140,7 +140,7 @@ export default function SignupScreen() {
         <View style={{ flexDirection: "row" as const, justifyContent: "center", alignItems: "center", paddingBottom: insets.bottom + 20 }}>
           <Text style={{ fontSize: 14, color: "#888", fontFamily: "Inter_400Regular" }}>Already have an account? </Text>
           <Pressable onPress={() => router.replace("/auth/login" as never)}>
-            <Text style={{ fontSize: 14, color: "#FF4500", fontFamily: "Inter_600SemiBold" }}>Sign In</Text>
+            <Text style={{ fontSize: 14, color: "#1F8C6B", fontFamily: "Inter_600SemiBold" }}>Sign In</Text>
           </Pressable>
         </View>
       </ScrollView>

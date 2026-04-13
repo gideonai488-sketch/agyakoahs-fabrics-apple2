@@ -116,7 +116,7 @@ export default function LoginScreen() {
       borderColor: "transparent",
     },
     inputContainerFocused: {
-      borderColor: "#FF4500",
+      borderColor: "#1F8C6B",
       backgroundColor: "#fff",
     },
     input: {
@@ -133,7 +133,7 @@ export default function LoginScreen() {
     },
     forgotPasswordText: {
       fontSize: 13,
-      color: "#FF4500",
+      color: "#1F8C6B",
       fontFamily: "Inter_500Medium",
     },
     loginBtn: {
@@ -179,7 +179,7 @@ export default function LoginScreen() {
     },
     signupLink: {
       fontSize: 14,
-      color: "#FF4500",
+      color: "#1F8C6B",
       fontFamily: "Inter_600SemiBold",
     },
     guestBtn: {
@@ -202,13 +202,13 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
-        colors={["#FF4500", "#FF6B35"]}
+        colors={["#1F8C6B", "#27A87E"]}
         style={styles.gradient}
       >
         <View style={styles.logoContainer}>
           <Feather name="shopping-bag" size={32} color="#fff" />
         </View>
-        <Text style={styles.appName}>ShopNow</Text>
+        <Text style={styles.appName}>ShopHub</Text>
         <Text style={styles.tagline}>Millions of products, unbeatable prices</Text>
       </LinearGradient>
 
@@ -259,7 +259,7 @@ export default function LoginScreen() {
         </Pressable>
 
         <Pressable style={styles.loginBtn} onPress={handleLogin} disabled={isLoading}>
-          <LinearGradient colors={["#FF4500", "#FF6B35"]} style={styles.loginBtnGradient}>
+          <LinearGradient colors={["#1F8C6B", "#27A87E"]} style={styles.loginBtnGradient}>
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (

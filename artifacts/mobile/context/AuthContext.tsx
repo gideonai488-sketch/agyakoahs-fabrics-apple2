@@ -77,6 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { full_name: name } },
     });
     if (error) throw error;
+    // Immediately sign in so the user doesn't wait for email confirmation
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) throw signInError;
   }
 
   async function logout() {

@@ -21,15 +21,23 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { getProductById } from "@/data/products";
 import { fetchProductById, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/db";
-import { getProductImageUrl } from "@/lib/supabase";
 
 const { width } = Dimensions.get("window");
 
-const REVIEWS = [
-  { id: "1", user: "Sarah M.", rating: 5, comment: "Amazing quality! Exactly as described.", date: "Apr 8, 2026" },
-  { id: "2", user: "John D.", rating: 4, comment: "Great value for money. Would buy again.", date: "Apr 2, 2026" },
-  { id: "3", user: "Emma K.", rating: 5, comment: "Exceeded my expectations. Outstanding!", date: "Mar 25, 2026" },
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=600&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&h=600&fit=crop",
+  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&h=600&fit=crop",
 ];
+
+function getFallbackImage(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) & 0xffff;
+  return FALLBACK_IMAGES[hash % FALLBACK_IMAGES.length]!;
+}
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -68,7 +76,7 @@ export default function ProductDetailScreen() {
       setIsLoading(true);
       try {
         const dbProd = await fetchProductById(id ?? "");
-        const imageUrl = dbProd?.image || localProduct?.image || getProductImageUrl(dbProd?.id ?? id ?? "");
+        const imageUrl = dbProd?.image || localProduct?.image || getFallbackImage(id ?? "");
         const origPrice = dbProd?.original_price ?? localProduct?.originalPrice ?? dbProd?.price ?? 0;
         const price = dbProd?.price ?? localProduct?.price ?? 0;
         const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : localProduct?.discount ?? 0;
@@ -322,30 +330,6 @@ export default function ProductDetailScreen() {
           </View>
         ) : null}
 
-        <View style={[styles.reviewsSection, { backgroundColor: colors.card, marginTop: 8 }]}>
-          <View style={styles.reviewsHeader}>
-            <Text style={[styles.optionTitle, { color: colors.foreground }]}>Reviews</Text>
-          </View>
-          {REVIEWS.map((review) => (
-            <View key={review.id} style={[styles.reviewItem, { borderBottomColor: colors.border }]}>
-              <View style={styles.reviewHeader}>
-                <View style={[styles.reviewAvatar, { backgroundColor: colors.accent }]}>
-                  <Text style={[styles.reviewAvatarText, { color: colors.primary }]}>{review.user[0]}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.reviewUser, { color: colors.foreground }]}>{review.user}</Text>
-                  <View style={{ flexDirection: "row" as const, gap: 2 }}>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Feather key={s} name="star" size={11} color={s <= review.rating ? colors.star : colors.border} />
-                    ))}
-                  </View>
-                </View>
-                <Text style={[styles.reviewDate, { color: colors.mutedForeground }]}>{review.date}</Text>
-              </View>
-              <Text style={[styles.reviewComment, { color: colors.foreground }]}>{review.comment}</Text>
-            </View>
-          ))}
-        </View>
 
         <View style={{ height: bottomPadding + 100 }} />
       </ScrollView>
