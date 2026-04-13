@@ -82,16 +82,16 @@ export default function ProfileScreen() {
     {
       section: "Account",
       items: [
-        { icon: "user", label: "Personal Info", desc: "Your account details" },
-        { icon: "map-pin", label: "Addresses", desc: "Saved delivery addresses" },
-        { icon: "credit-card", label: "Payment Methods", desc: "Cards and mobile money" },
+        { icon: "user", label: "Personal Info", desc: "Your account details", onPress: () => router.push("/profile/personal-info" as never) },
+        { icon: "map-pin", label: "Addresses", desc: "Saved delivery addresses", onPress: () => router.push("/profile/addresses" as never) },
+        { icon: "credit-card", label: "Payment Methods", desc: "Cards and mobile money", onPress: () => router.push("/profile/payment-methods" as never) },
       ],
     },
     {
       section: "Support",
       items: [
-        { icon: "help-circle", label: "Help Center", desc: "FAQ and support" },
-        { icon: "shield", label: "Privacy Policy", desc: "How we use your data" },
+        { icon: "help-circle", label: "Help Center", desc: "FAQ and support", onPress: () => router.push("/profile/help-center" as never) },
+        { icon: "shield", label: "Privacy Policy", desc: "How we use your data", onPress: () => router.push("/profile/privacy-policy" as never) },
       ],
     },
   ];

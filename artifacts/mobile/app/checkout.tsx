@@ -1,6 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -19,7 +18,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { createOrder, initializePaystackPayment, updateOrderStatus, verifyPaystackPayment } from "@/lib/db";
+import PaystackWebView from "@/components/PaystackWebView";
+import {
+  createOrder,
+  initializePaystackPayment,
+  updateOrderStatus,
+  verifyPaystackPayment,
+} from "@/lib/db";
 
 const STEPS = ["Address", "Payment", "Review"];
 
@@ -36,7 +41,13 @@ export default function CheckoutScreen() {
 
   const [step, setStep] = useState(0);
   const [isPlacing, setIsPlacing] = useState(false);
-  const [placingLabel, setPlacingLabel] = useState("Processing...");
+  const [placingLabel, setPlacingLabel] = useState("Processing…");
+
+  // Paystack in-app WebView state
+  const [webViewVisible, setWebViewVisible] = useState(false);
+  const [authUrl, setAuthUrl] = useState("");
+  const [currentRef, setCurrentRef] = useState("");
+  const [currentOrderId, setCurrentOrderId] = useState("");
 
   const [address, setAddress] = useState({
     name: user?.name ?? "",
@@ -59,6 +70,71 @@ export default function CheckoutScreen() {
       return false;
     }
     return true;
+  }
+
+  // Called when Paystack WebView detects payment completion
+  async function handlePaymentSuccess(reference: string) {
+    setWebViewVisible(false);
+    setIsPlacing(true);
+    setPlacingLabel("Verifying payment…");
+    try {
+      const result = await verifyPaystackPayment(reference);
+      if (result.paid) {
+        await updateOrderStatus(currentOrderId, "paid", reference);
+        clearCart();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/order-success" as never);
+      } else {
+        await updateOrderStatus(currentOrderId, "pending");
+        Alert.alert(
+          "Payment Not Confirmed",
+          "We couldn't confirm your payment yet. If money was deducted, it will reflect in your order shortly.",
+          [
+            { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
+            { text: "Retry", style: "cancel" },
+          ]
+        );
+      }
+    } catch {
+      await updateOrderStatus(currentOrderId, "pending");
+      Alert.alert("Verification Failed", "Could not verify payment. Check your orders for status updates.", [
+        { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
+        { text: "OK", style: "cancel" },
+      ]);
+    } finally {
+      setIsPlacing(false);
+      setPlacingLabel("Processing…");
+    }
+  }
+
+  // Called when user closes Paystack WebView without completing payment
+  async function handlePaymentCancel() {
+    setWebViewVisible(false);
+    // Verify anyway — user may have paid before closing
+    setIsPlacing(true);
+    setPlacingLabel("Checking payment status…");
+    try {
+      const result = await verifyPaystackPayment(currentRef);
+      if (result.paid) {
+        await updateOrderStatus(currentOrderId, "paid", currentRef);
+        clearCart();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/order-success" as never);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    await updateOrderStatus(currentOrderId, "pending");
+    setIsPlacing(false);
+    Alert.alert(
+      "Payment Cancelled",
+      "Your order has been saved. You can retry payment from My Orders.",
+      [
+        { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
+        { text: "Stay Here", style: "cancel" },
+      ]
+    );
   }
 
   async function handlePlaceOrder() {
@@ -94,60 +170,34 @@ export default function CheckoutScreen() {
           quantity: item.quantity,
         }))
       );
+
       if (paymentMethod === "paystack") {
-        // Step 2 — initialize Paystack (edge function uses secret key)
-        setPlacingLabel("Opening payment…");
+        // Step 2 — initialize Paystack via Supabase edge function (secret key on backend)
+        setPlacingLabel("Initializing payment…");
         const { authorization_url, reference } = await initializePaystackPayment(
           order.id,
           user.email,
-          orderTotal           // passed in GH₵; toPesewas() converts in db.ts
+          orderTotal
         );
-        // Step 3 — open Paystack payment page in browser
-        await WebBrowser.openBrowserAsync(authorization_url, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        });
 
-        // Step 4 — browser closed; verify payment regardless of how it closed
-        setPlacingLabel("Verifying payment…");
-        let paid = false;
-        try {
-          const result = await verifyPaystackPayment(reference);
-          paid = result.paid;
-        } catch {
-          // verification failed — treat as unpaid but don't crash
-        }
+        // Store for use in WebView callbacks
+        setCurrentOrderId(order.id);
+        setCurrentRef(reference);
+        setAuthUrl(authorization_url);
 
-        if (paid) {
-          await updateOrderStatus(order.id, "paid", reference);
-          clearCart();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          router.replace("/order-success" as never);
-        } else {
-          await updateOrderStatus(order.id, "pending");
-          Alert.alert(
-            "Payment Not Confirmed",
-            "We couldn't confirm your payment yet. If money was deducted, it will reflect in your order within a few minutes.",
-            [
-              {
-                text: "View Orders",
-                onPress: () => router.replace("/(tabs)/orders" as never),
-              },
-              { text: "Retry", style: "cancel" },
-            ]
-          );
-        }
+        setIsPlacing(false);
+
+        // Step 3 — open in-app Paystack WebView
+        setWebViewVisible(true);
       } else {
-        // Cash on delivery — mark as processing immediately
+        // Cash on delivery
         await updateOrderStatus(order.id, "processing");
         clearCart();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace("/order-success" as never);
       }
     } catch (err: any) {
-      // If order was created but payment failed, keep it as pending
-      const msg = err?.message ?? "Failed to place order. Please try again.";
-      Alert.alert("Something went wrong", msg);
-    } finally {
+      Alert.alert("Something went wrong", err?.message ?? "Failed to place order. Please try again.");
       setIsPlacing(false);
       setPlacingLabel("Processing…");
     }
@@ -164,6 +214,15 @@ export default function CheckoutScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* In-app Paystack WebView modal */}
+      <PaystackWebView
+        visible={webViewVisible}
+        authorizationUrl={authUrl}
+        reference={currentRef}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handlePaymentCancel}
+      />
+
       <View style={[styles.header, { paddingTop: topPadding + 12, backgroundColor: colors.card }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={colors.foreground} />
@@ -191,7 +250,7 @@ export default function CheckoutScreen() {
         ))}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 16 }}>
         {step === 0 && (
           <View>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Delivery Address</Text>
@@ -240,9 +299,9 @@ export default function CheckoutScreen() {
             </View>
             {paymentMethod === "paystack" && (
               <View style={[styles.infoBox, { backgroundColor: colors.accent }]}>
-                <Feather name="info" size={16} color={colors.primary} />
+                <Feather name="lock" size={16} color={colors.primary} />
                 <Text style={{ flex: 1, fontSize: 12, color: colors.primary, fontFamily: "Inter_400Regular" }}>
-                  You'll be redirected to Paystack to complete secure payment via card, mobile money, or bank transfer.
+                  Secure in-app payment via Paystack — card, Mobile Money, or bank transfer. Your details are never stored.
                 </Text>
               </View>
             )}
@@ -290,8 +349,6 @@ export default function CheckoutScreen() {
             </View>
           </View>
         )}
-
-        <View style={{ height: bottomPadding + 90 }} />
       </ScrollView>
 
       <View style={[styles.bottomBar, { backgroundColor: colors.card, paddingBottom: bottomPadding + 10, borderTopColor: colors.border }]}>
@@ -320,7 +377,7 @@ export default function CheckoutScreen() {
                 {step < STEPS.length - 1
                   ? "Continue"
                   : paymentMethod === "paystack"
-                  ? `Pay GH₵${orderTotal.toFixed(2)} via Paystack`
+                  ? `Pay GH₵${orderTotal.toFixed(2)} — Secure Checkout`
                   : `Place Order · GH₵${orderTotal.toFixed(2)}`}
               </Text>
               <Feather name="arrow-right" size={18} color="#fff" />
@@ -358,7 +415,7 @@ const styles = StyleSheet.create({
   totalRow: { flexDirection: "row" as const, justifyContent: "space-between", marginBottom: 8 },
   grandTotal: { fontSize: 16, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
   grandTotalValue: { fontSize: 20, fontWeight: "700" as const, fontFamily: "Inter_700Bold" },
-  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
+  bottomBar: { paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
   nextBtn: { borderRadius: 14, flexDirection: "row" as const, alignItems: "center", justifyContent: "center", paddingVertical: 16, gap: 8 },
   nextBtnText: { fontSize: 15, fontWeight: "700" as const, color: "#fff", fontFamily: "Inter_700Bold" },
 });

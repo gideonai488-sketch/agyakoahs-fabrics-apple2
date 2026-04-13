@@ -58,7 +58,7 @@ export default function CartScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Cart ({totalItems})</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
         <View style={{ padding: 16, gap: 12 }}>
           {items.map((item) => (
             <View key={item.id} style={[styles.cartItem, { backgroundColor: colors.card }]}>
@@ -83,7 +83,7 @@ export default function CartScreen() {
                 )}
                 <View style={styles.itemBottom}>
                   <Text style={[styles.itemPrice, { color: colors.primary }]}>
-                    ${(item.price * item.quantity).toFixed(2)}
+                    GH₵{(item.price * item.quantity).toFixed(2)}
                   </Text>
                   <View style={styles.qtyRow}>
                     <Pressable
@@ -152,7 +152,7 @@ export default function CartScreen() {
           )}
         </View>
 
-        <View style={{ height: bottomPadding + 110 }} />
+        <View style={{ height: 16 }} />
       </ScrollView>
 
       <View style={[styles.checkoutBar, { backgroundColor: colors.card, paddingBottom: bottomPadding + 12, borderTopColor: colors.border }]}>
@@ -308,10 +308,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
   checkoutBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row" as const,
     alignItems: "center",
     paddingHorizontal: 16,
