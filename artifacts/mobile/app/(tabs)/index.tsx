@@ -68,15 +68,32 @@ export default function HomeScreen() {
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      paddingTop: topPadding + 12,
-      paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingTop: topPadding + 8,
+      paddingHorizontal: 12,
+      paddingBottom: 8,
       backgroundColor: colors.card,
+      flexDirection: "row" as const,
+      alignItems: "center",
+      gap: 8,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 3,
+      elevation: 3,
+    },
+    logoMark: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    logoText: {
+      fontSize: 14,
+      fontWeight: "700" as const,
+      color: "#fff",
+      fontFamily: "Inter_700Bold",
     },
     headerTop: {
       flexDirection: "row" as const,
@@ -101,8 +118,8 @@ export default function HomeScreen() {
       fontFamily: "Inter_600SemiBold",
     },
     cartBtn: {
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       alignItems: "center",
       justifyContent: "center",
       position: "relative",
@@ -111,15 +128,15 @@ export default function HomeScreen() {
       position: "absolute",
       top: 0,
       right: 0,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
       backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },
     cartBadgeText: {
-      fontSize: 10,
+      fontSize: 9,
       color: "#fff",
       fontWeight: "700" as const,
     },
@@ -273,31 +290,39 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Pressable style={styles.locationRow}>
-            <Feather name="map-pin" size={14} color={colors.primary} />
-            <View>
-              <Text style={styles.deliverTo}>Deliver to</Text>
-              <Text style={styles.location}>New York, NY</Text>
-            </View>
-            <Feather name="chevron-down" size={14} color={colors.foreground} />
-          </Pressable>
-          <Pressable
-            style={styles.cartBtn}
-            onPress={() => router.push("/(tabs)/cart" as never)}
-          >
-            <Feather name="shopping-cart" size={22} color={colors.foreground} />
-            {totalItems > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{totalItems > 99 ? "99+" : totalItems}</Text>
-              </View>
-            )}
-          </Pressable>
+        <View style={styles.logoMark}>
+          <Text style={styles.logoText}>S</Text>
         </View>
-        <SearchBar
+        <Pressable
+          style={{ flex: 1 }}
           onPress={() => router.push("/search" as never)}
-          editable={false}
-        />
+        >
+          <View style={{
+            flexDirection: "row" as const,
+            alignItems: "center",
+            backgroundColor: colors.background,
+            borderRadius: 20,
+            paddingHorizontal: 10,
+            paddingVertical: 7,
+            gap: 6,
+          }}>
+            <Feather name="search" size={15} color={colors.mutedForeground} />
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>
+              Search products...
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable
+          style={styles.cartBtn}
+          onPress={() => router.push("/(tabs)/cart" as never)}
+        >
+          <Feather name="shopping-cart" size={20} color={colors.foreground} />
+          {totalItems > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{totalItems > 99 ? "99+" : totalItems}</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
