@@ -16,6 +16,37 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### Shopping App (mobile) — `/`
+Full-featured Temu-style shopping mobile app built with Expo/React Native.
+
+**Features:**
+- Splash screen (orange/red gradient with app icon)
+- Auth flow: login + signup screens
+- Bottom navbar with 5 tabs: Home, Categories, Cart, Orders, Profile
+- Home: banner carousel, flash sale timer, category filters, product grid
+- Categories: hierarchical browsing with subcategory chips
+- Product detail: image gallery, size/color selectors, reviews, add-to-cart
+- Cart: quantity controls, order summary, free shipping threshold
+- Checkout: 3-step flow (Address → Payment → Review → Order placed)
+- Order success: animated confirmation screen
+- Search: trending terms, live search with results
+- Profile: user info, stats, menu, sign in/out
+
+**State Management:**
+- Auth: AsyncStorage-backed context (`context/AuthContext.tsx`)
+- Cart: AsyncStorage-backed context (`context/CartContext.tsx`)
+- Products: local mock data (`data/products.ts`) with 12 products
+
+**Design:**
+- Brand colors: Orange #FF4500 primary
+- Font: Inter (400/500/600/700)
+- Custom app icon + splash + banner images generated via AI
+
+### API Server — `/api`
+Express 5 server (backend). Currently only has health check endpoint.
+
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages

@@ -1,0 +1,32 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "O-cT_Q1iRwrdGSV1Po581"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "shopping app icon"
+
+[[generated]]
+id = "g4KminOIYhtn_ZoGF6xza"
+uri = "file://artifacts/mobile/assets/images/splash.png"
+type = "image"
+title = "shopping splash background"
+
+[[generated]]
+id = "VXnkTRAjukarKWOhLud0y"
+uri = "file://artifacts/mobile/assets/images/banner1.png"
+type = "image"
+title = "fashion sale banner"
+
+[[generated]]
+id = "HBHkMVyqzDKuJW9nu3Ix5"
+uri = "file://artifacts/mobile/assets/images/banner2.png"
+type = "image"
+title = "electronics banner"
+
+[[generated]]
+id = "w_khRpggKkJB4XBLe2Sjz"
+uri = "file://artifacts/mobile/assets/images/banner3.png"
+type = "image"
+title = "home decor banner"
