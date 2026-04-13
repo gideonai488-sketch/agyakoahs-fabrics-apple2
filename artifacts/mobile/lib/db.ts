@@ -1,4 +1,5 @@
 import { supabase, DbOrder, DbOrderItem, DbWishlist } from "./supabase";
+import { PAYSTACK_PUBLIC_KEY, toPesewas } from "./paystack";
 
 export async function fetchProducts() {
   const { data, error } = await supabase
@@ -86,10 +87,16 @@ export async function removeFromWishlist(userId: string, productId: string) {
 export async function initializePaystackPayment(
   orderId: string,
   email: string,
-  amountPesewas: number
+  amountGhc: number
 ) {
   const { data, error } = await supabase.functions.invoke("paystack-initialize", {
-    body: { order_id: orderId, email, amount: amountPesewas },
+    body: {
+      order_id: orderId,
+      email,
+      amount: toPesewas(amountGhc),
+      public_key: PAYSTACK_PUBLIC_KEY,
+      currency: "GHS",
+    },
   });
   if (error) throw error;
   return data as { authorization_url: string; reference: string; access_code: string };

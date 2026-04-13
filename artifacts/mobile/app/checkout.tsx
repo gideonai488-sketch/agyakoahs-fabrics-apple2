@@ -1,7 +1,5 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
-import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -21,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { createOrder, initializePaystackPayment, updateOrderStatus } from "@/lib/db";
+import { createOrder, initializePaystackPayment, updateOrderStatus, verifyPaystackPayment } from "@/lib/db";
 
 const STEPS = ["Address", "Payment", "Review"];
 
@@ -38,6 +36,7 @@ export default function CheckoutScreen() {
 
   const [step, setStep] = useState(0);
   const [isPlacing, setIsPlacing] = useState(false);
+  const [placingLabel, setPlacingLabel] = useState("Processing...");
 
   const [address, setAddress] = useState({
     name: user?.name ?? "",
@@ -70,7 +69,10 @@ export default function CheckoutScreen() {
     if (!validateAddress()) return;
 
     setIsPlacing(true);
+    setPlacingLabel("Creating order…");
+
     try {
+      // Step 1 — create the order record
       const order = await createOrder(
         {
           user_id: user.id,
@@ -92,35 +94,62 @@ export default function CheckoutScreen() {
           quantity: item.quantity,
         }))
       );
-
       if (paymentMethod === "paystack") {
+        // Step 2 — initialize Paystack (edge function uses secret key)
+        setPlacingLabel("Opening payment…");
         const { authorization_url, reference } = await initializePaystackPayment(
           order.id,
           user.email,
-          Math.round(orderTotal * 100)
+          orderTotal           // passed in GH₵; toPesewas() converts in db.ts
         );
+        // Step 3 — open Paystack payment page in browser
+        await WebBrowser.openBrowserAsync(authorization_url, {
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+        });
 
-        const result = await WebBrowser.openBrowserAsync(authorization_url);
-
-        if (result.type === "cancel" || result.type === "dismiss") {
-          await updateOrderStatus(order.id, "pending");
-          Alert.alert("Payment Pending", "Payment was not completed. You can retry from My Orders.");
-          router.replace("/(tabs)/orders" as never);
-          return;
+        // Step 4 — browser closed; verify payment regardless of how it closed
+        setPlacingLabel("Verifying payment…");
+        let paid = false;
+        try {
+          const result = await verifyPaystackPayment(reference);
+          paid = result.paid;
+        } catch {
+          // verification failed — treat as unpaid but don't crash
         }
 
-        await updateOrderStatus(order.id, "paid", reference);
+        if (paid) {
+          await updateOrderStatus(order.id, "paid", reference);
+          clearCart();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace("/order-success" as never);
+        } else {
+          await updateOrderStatus(order.id, "pending");
+          Alert.alert(
+            "Payment Not Confirmed",
+            "We couldn't confirm your payment yet. If money was deducted, it will reflect in your order within a few minutes.",
+            [
+              {
+                text: "View Orders",
+                onPress: () => router.replace("/(tabs)/orders" as never),
+              },
+              { text: "Retry", style: "cancel" },
+            ]
+          );
+        }
       } else {
+        // Cash on delivery — mark as processing immediately
         await updateOrderStatus(order.id, "processing");
+        clearCart();
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace("/order-success" as never);
       }
-
-      clearCart();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/order-success" as never);
     } catch (err: any) {
-      Alert.alert("Error", err?.message ?? "Failed to place order. Please try again.");
+      // If order was created but payment failed, keep it as pending
+      const msg = err?.message ?? "Failed to place order. Please try again.";
+      Alert.alert("Something went wrong", msg);
     } finally {
       setIsPlacing(false);
+      setPlacingLabel("Processing…");
     }
   }
 
@@ -281,7 +310,10 @@ export default function CheckoutScreen() {
           disabled={isPlacing}
         >
           {isPlacing ? (
-            <ActivityIndicator color="#fff" />
+            <View style={{ flexDirection: "row" as const, alignItems: "center", gap: 10 }}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={styles.nextBtnText}>{placingLabel}</Text>
+            </View>
           ) : (
             <>
               <Text style={styles.nextBtnText}>
