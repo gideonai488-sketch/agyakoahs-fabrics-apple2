@@ -76,7 +76,7 @@ export default function ProductDetailScreen() {
       setIsLoading(true);
       try {
         const dbProd = await fetchProductById(id ?? "");
-        const imageUrl = dbProd?.image || localProduct?.image || getFallbackImage(id ?? "");
+        const imageUrl = dbProd?.image_url || localProduct?.image || getFallbackImage(id ?? "");
         const origPrice = dbProd?.original_price ?? localProduct?.originalPrice ?? dbProd?.price ?? 0;
         const price = dbProd?.price ?? localProduct?.price ?? 0;
         const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : localProduct?.discount ?? 0;
@@ -88,19 +88,17 @@ export default function ProductDetailScreen() {
           originalPrice: origPrice,
           discount: disc,
           image: imageUrl,
-          images: localProduct?.images ?? [imageUrl],
-          rating: localProduct?.rating ?? 4.5,
-          sold: localProduct?.sold ?? 0,
+          images: localProduct?.images ? [imageUrl, ...localProduct.images.slice(1)] : [imageUrl],
+          rating: dbProd?.rating ?? localProduct?.rating ?? 4.5,
+          sold: dbProd?.sold ?? localProduct?.sold ?? 0,
           description: dbProd?.description ?? localProduct?.description ?? "",
           sizes: localProduct?.sizes,
           colors: localProduct?.colors,
           freeShipping: localProduct?.freeShipping ?? false,
         });
 
-        if (dbProd?.sizes?.[0]) setSelectedSize(dbProd.sizes[0]);
-        else if (localProduct?.sizes?.[0]) setSelectedSize(localProduct.sizes[0]);
-        if (dbProd?.colors?.[0]) setSelectedColor(dbProd.colors[0]);
-        else if (localProduct?.colors?.[0]) setSelectedColor(localProduct.colors[0]);
+        if (localProduct?.sizes?.[0]) setSelectedSize(localProduct.sizes[0]);
+        if (localProduct?.colors?.[0]) setSelectedColor(localProduct.colors[0]);
       } catch {
         if (localProduct) {
           setProduct({

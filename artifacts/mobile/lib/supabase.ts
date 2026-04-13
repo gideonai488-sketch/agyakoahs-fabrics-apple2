@@ -26,9 +26,14 @@ export type DbProduct = {
   name: string;
   price: number;
   original_price: number;
-  image?: string;
-  category?: string;
-  description?: string;
+  image_url?: string;
+  badge?: string | null;
+  stock?: number | null;
+  rating?: number | null;
+  sold?: number | null;
+  category?: string | null;
+  description?: string | null;
+  created_at?: string;
 };
 
 export type DbOrder = {

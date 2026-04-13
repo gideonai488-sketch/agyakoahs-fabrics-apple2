@@ -28,7 +28,7 @@ type WishlistProduct = {
     name: string;
     price: number;
     original_price: number;
-    image?: string;
+    image_url?: string;
   };
 };
 
@@ -81,7 +81,7 @@ export default function WishlistScreen() {
       name: item.name,
       price: item.price,
       originalPrice: item.original_price,
-      image: item.image ?? PLACEHOLDER,
+      image: item.image_url ?? PLACEHOLDER,
     });
   }
 
@@ -127,7 +127,7 @@ export default function WishlistScreen() {
           </View>
         ) : (
           items.map(({ wishlistId, product }) => {
-            const imageUrl = product.image ?? PLACEHOLDER;
+            const imageUrl = product.image_url ?? PLACEHOLDER;
             const disc = discount(product.price, product.original_price);
             return (
               <View key={wishlistId} style={[s.card, { backgroundColor: colors.card }]}>

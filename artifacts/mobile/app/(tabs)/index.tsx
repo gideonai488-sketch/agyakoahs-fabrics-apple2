@@ -53,7 +53,7 @@ export default function HomeScreen() {
           const mapped = rows.map((r: any, i: number) => {
             const local = PRODUCTS[i % PRODUCTS.length];
             const origPrice = r.original_price ?? r.price;
-            const imgUrl = r.image || local.image;
+            const imgUrl = r.image_url || local.image;
             return {
               ...local,
               id: r.id,
@@ -62,7 +62,12 @@ export default function HomeScreen() {
               originalPrice: origPrice,
               discount: origPrice > 0 ? Math.round(((origPrice - r.price) / origPrice) * 100) : 0,
               image: imgUrl,
-              images: [imgUrl, ...local.images.slice(1)],
+              images: [imgUrl, ...(imgUrl !== local.image ? [local.image] : local.images.slice(1))],
+              rating: r.rating ?? local.rating,
+              sold: r.sold ?? local.sold,
+              category: r.category ?? local.category,
+              description: r.description ?? local.description,
+              badge: r.badge ?? null,
             };
           });
           setDbProducts(mapped);
