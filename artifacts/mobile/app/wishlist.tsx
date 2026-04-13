@@ -18,7 +18,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import { fetchWishlist, removeFromWishlist, fetchProductById } from "@/lib/db";
-import { getProductImageUrl } from "@/lib/supabase";
+
+const PLACEHOLDER = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop";
 
 type WishlistProduct = {
   wishlistId: string;
@@ -80,7 +81,7 @@ export default function WishlistScreen() {
       name: item.name,
       price: item.price,
       originalPrice: item.original_price,
-      image: item.image ?? getProductImageUrl(item.id),
+      image: item.image ?? PLACEHOLDER,
     });
   }
 
@@ -126,7 +127,7 @@ export default function WishlistScreen() {
           </View>
         ) : (
           items.map(({ wishlistId, product }) => {
-            const imageUrl = product.image ?? getProductImageUrl(product.id);
+            const imageUrl = product.image ?? PLACEHOLDER;
             const disc = discount(product.price, product.original_price);
             return (
               <View key={wishlistId} style={[s.card, { backgroundColor: colors.card }]}>

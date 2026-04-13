@@ -68,7 +68,7 @@ export default function ProductDetailScreen() {
       setIsLoading(true);
       try {
         const dbProd = await fetchProductById(id ?? "");
-        const imageUrl = dbProd?.image ?? getProductImageUrl(dbProd?.id ?? id ?? "");
+        const imageUrl = dbProd?.image || localProduct?.image || getProductImageUrl(dbProd?.id ?? id ?? "");
         const origPrice = dbProd?.original_price ?? localProduct?.originalPrice ?? dbProd?.price ?? 0;
         const price = dbProd?.price ?? localProduct?.price ?? 0;
         const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : localProduct?.discount ?? 0;
