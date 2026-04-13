@@ -28,23 +28,29 @@ const BANNERS = [
   {
     id: "1",
     image: require("@/assets/images/banner1.png"),
-    title: "Fashion Sale",
-    subtitle: "Up to 80% off",
-    gradient: ["#FF4500", "#FF6B35"] as const,
+    tag: "LIMITED TIME",
+    title: "Fashion Sale\nFavourites",
+    subtitle: "Best-selling styles are moving fast—grab yours while it lasts.",
+    cta: "Grab Yours",
+    gradient: ["#1a3a2a", "#2d6a4f"] as const,
   },
   {
     id: "2",
     image: require("@/assets/images/banner2.png"),
-    title: "Electronics",
-    subtitle: "Best gadgets deals",
+    tag: "HOT DEALS",
+    title: "Top Electronics\nBig Savings",
+    subtitle: "Best gadgets at unbeatable prices. Shop today.",
+    cta: "Shop Now",
     gradient: ["#1a1a2e", "#16213e"] as const,
   },
   {
     id: "3",
     image: require("@/assets/images/banner3.png"),
-    title: "Home & Living",
-    subtitle: "Refresh your space",
-    gradient: ["#2d6a4f", "#40916c"] as const,
+    tag: "NEW ARRIVALS",
+    title: "Home & Living\nRefreshed",
+    subtitle: "Transform your space with our curated picks.",
+    cta: "Explore",
+    gradient: ["#2a1a3a", "#3d1f5e"] as const,
   },
 ];
 
@@ -68,32 +74,47 @@ export default function HomeScreen() {
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: {
-      paddingTop: topPadding + 8,
-      paddingHorizontal: 12,
-      paddingBottom: 8,
+      paddingTop: topPadding + 6,
+      paddingHorizontal: 14,
+      paddingBottom: 10,
       backgroundColor: colors.card,
       flexDirection: "row" as const,
       alignItems: "center",
-      gap: 8,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 3,
-      elevation: 3,
+      gap: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     logoMark: {
-      width: 32,
-      height: 32,
-      borderRadius: 8,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
     },
     logoText: {
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: "700" as const,
       color: "#fff",
       fontFamily: "Inter_700Bold",
+    },
+    storeName: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: "700" as const,
+      color: colors.foreground,
+      fontFamily: "Inter_700Bold",
+    },
+    headerIcons: {
+      flexDirection: "row" as const,
+      alignItems: "center",
+      gap: 4,
+    },
+    headerIcon: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
     },
     headerTop: {
       flexDirection: "row" as const,
@@ -141,51 +162,73 @@ export default function HomeScreen() {
       fontWeight: "700" as const,
     },
     bannerContainer: {
-      height: 180,
-      marginVertical: 16,
+      height: 200,
+      marginHorizontal: 16,
+      marginVertical: 14,
     },
     banner: {
       width: width - 32,
-      height: 180,
-      borderRadius: 16,
+      height: 200,
+      borderRadius: 18,
       overflow: "hidden",
-      marginHorizontal: 16,
+      marginHorizontal: 0,
     },
     bannerImage: {
       ...StyleSheet.absoluteFillObject,
+      opacity: 0.35,
     },
     bannerGradient: {
       ...StyleSheet.absoluteFillObject,
-      opacity: 0.6,
     },
     bannerContent: {
       position: "absolute",
-      bottom: 20,
-      left: 20,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      padding: 22,
+      justifyContent: "center",
+    },
+    bannerTag: {
+      flexDirection: "row" as const,
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    bannerTagText: {
+      fontSize: 11,
+      fontWeight: "600" as const,
+      color: "rgba(255,255,255,0.85)",
+      fontFamily: "Inter_600SemiBold",
+      letterSpacing: 0.8,
+      textTransform: "uppercase" as const,
     },
     bannerTitle: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: "700" as const,
       color: "#fff",
       fontFamily: "Inter_700Bold",
+      lineHeight: 30,
+      marginBottom: 8,
     },
     bannerSubtitle: {
-      fontSize: 14,
-      color: "rgba(255,255,255,0.9)",
+      fontSize: 12,
+      color: "rgba(255,255,255,0.8)",
       fontFamily: "Inter_400Regular",
+      lineHeight: 18,
+      marginBottom: 16,
+      maxWidth: "80%",
     },
     bannerShopBtn: {
-      marginTop: 8,
       backgroundColor: "#fff",
-      paddingHorizontal: 14,
-      paddingVertical: 6,
-      borderRadius: 20,
+      paddingHorizontal: 18,
+      paddingVertical: 8,
+      borderRadius: 22,
       alignSelf: "flex-start",
     },
     bannerShopBtnText: {
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: "600" as const,
-      color: "#FF4500",
+      color: "#1a3a2a",
       fontFamily: "Inter_600SemiBold",
     },
     dotsRow: {
@@ -293,36 +336,26 @@ export default function HomeScreen() {
         <View style={styles.logoMark}>
           <Text style={styles.logoText}>S</Text>
         </View>
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={() => router.push("/search" as never)}
-        >
-          <View style={{
-            flexDirection: "row" as const,
-            alignItems: "center",
-            backgroundColor: colors.background,
-            borderRadius: 20,
-            paddingHorizontal: 10,
-            paddingVertical: 7,
-            gap: 6,
-          }}>
-            <Feather name="search" size={15} color={colors.mutedForeground} />
-            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>
-              Search products...
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          style={styles.cartBtn}
-          onPress={() => router.push("/(tabs)/cart" as never)}
-        >
-          <Feather name="shopping-cart" size={20} color={colors.foreground} />
-          {totalItems > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{totalItems > 99 ? "99+" : totalItems}</Text>
-            </View>
-          )}
-        </Pressable>
+        <Text style={styles.storeName}>ShopHub</Text>
+        <View style={styles.headerIcons}>
+          <Pressable style={styles.headerIcon} onPress={() => router.push("/search" as never)}>
+            <Feather name="search" size={20} color={colors.foreground} />
+          </Pressable>
+          <Pressable style={styles.headerIcon} onPress={() => router.push("/(tabs)/profile" as never)}>
+            <Feather name="user" size={20} color={colors.foreground} />
+          </Pressable>
+          <Pressable
+            style={styles.cartBtn}
+            onPress={() => router.push("/(tabs)/cart" as never)}
+          >
+            <Feather name="shopping-cart" size={20} color={colors.foreground} />
+            {totalItems > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{totalItems > 99 ? "99+" : totalItems}</Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -333,10 +366,10 @@ export default function HomeScreen() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            snapToInterval={width}
+            snapToInterval={width - 32}
             decelerationRate="fast"
             onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+              const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 32));
               setActiveBanner(idx);
             }}
             renderItem={({ item }) => (
@@ -346,13 +379,16 @@ export default function HomeScreen() {
                   colors={item.gradient}
                   style={styles.bannerGradient}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                 />
                 <View style={styles.bannerContent}>
+                  <View style={styles.bannerTag}>
+                    <Text style={styles.bannerTagText}>✦ {item.tag}</Text>
+                  </View>
                   <Text style={styles.bannerTitle}>{item.title}</Text>
                   <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
                   <Pressable style={styles.bannerShopBtn}>
-                    <Text style={styles.bannerShopBtnText}>Shop now</Text>
+                    <Text style={styles.bannerShopBtnText}>{item.cta}</Text>
                   </Pressable>
                 </View>
               </View>

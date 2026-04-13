@@ -43,7 +43,7 @@ function CartIcon({ color }: { color: string }) {
     <View style={{ position: "relative" }}>
       <Feather name="shopping-cart" size={22} color={color} />
       {totalItems > 0 && (
-        <View style={[styles.badge, { backgroundColor: "#FF4500" }]}>
+        <View style={[styles.badge, { backgroundColor: "#1F8C6B" }]}>
           <Text style={styles.badgeText}>{totalItems > 9 ? "9+" : totalItems}</Text>
         </View>
       )}

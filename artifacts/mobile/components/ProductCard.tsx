@@ -21,10 +21,10 @@ const CARD_WIDTH = (width - 36) / 2;
 
 interface ProductCardProps {
   product: Product;
-  onPress?: () => void;
+  staffPick?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, staffPick }: ProductCardProps) {
   const colors = useColors();
   const { addItem } = useCart();
   const [liked, setLiked] = useState(false);
@@ -62,18 +62,23 @@ export default function ProductCard({ product }: ProductCardProps) {
     ]).start();
   }
 
+  function formatSold(n: number) {
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return String(n);
+  }
+
   const styles = StyleSheet.create({
     card: {
       width: CARD_WIDTH,
       backgroundColor: colors.card,
-      borderRadius: 12,
+      borderRadius: 14,
       overflow: "hidden",
       marginBottom: 12,
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      elevation: 3,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 2,
     },
     imageContainer: {
       position: "relative",
@@ -88,81 +93,91 @@ export default function ProductCard({ product }: ProductCardProps) {
       position: "absolute",
       top: 8,
       left: 8,
-      backgroundColor: colors.primary,
-      paddingHorizontal: 6,
+      backgroundColor: "#e53935",
+      paddingHorizontal: 7,
       paddingVertical: 3,
-      borderRadius: 6,
+      borderRadius: 8,
     },
     discountText: {
       color: "#fff",
       fontSize: 11,
       fontWeight: "700" as const,
+      fontFamily: "Inter_700Bold",
+    },
+    staffPickBadge: {
+      position: "absolute",
+      top: 8,
+      left: 8,
+      backgroundColor: "rgba(0,0,0,0.55)",
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      borderRadius: 8,
+    },
+    staffPickText: {
+      color: "#FFD700",
+      fontSize: 10,
+      fontWeight: "600" as const,
+      fontFamily: "Inter_600SemiBold",
     },
     likeBtn: {
       position: "absolute",
       top: 8,
       right: 8,
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       backgroundColor: "rgba(255,255,255,0.9)",
       alignItems: "center",
       justifyContent: "center",
     },
     info: {
-      padding: 8,
+      padding: 10,
     },
     name: {
-      fontSize: 12,
+      fontSize: 13,
       color: colors.foreground,
-      lineHeight: 16,
-      marginBottom: 4,
+      lineHeight: 18,
+      marginBottom: 6,
+      fontFamily: "Inter_400Regular",
+    },
+    ratingRow: {
+      flexDirection: "row" as const,
+      alignItems: "center",
+      gap: 4,
+      marginBottom: 6,
+    },
+    ratingText: {
+      fontSize: 12,
+      color: colors.mutedForeground,
       fontFamily: "Inter_400Regular",
     },
     priceRow: {
       flexDirection: "row" as const,
       alignItems: "center",
-      gap: 4,
-      marginBottom: 4,
+      justifyContent: "space-between",
+    },
+    priceGroup: {
+      flex: 1,
     },
     price: {
       fontSize: 15,
       fontWeight: "700" as const,
-      color: colors.primary,
+      color: colors.foreground,
       fontFamily: "Inter_700Bold",
     },
     originalPrice: {
       fontSize: 11,
       color: colors.mutedForeground,
       textDecorationLine: "line-through" as const,
-    },
-    meta: {
-      flexDirection: "row" as const,
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    rating: {
-      flexDirection: "row" as const,
-      alignItems: "center",
-      gap: 2,
-    },
-    ratingText: {
-      fontSize: 11,
-      color: colors.mutedForeground,
       fontFamily: "Inter_400Regular",
     },
     addBtn: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: colors.primary,
       alignItems: "center",
       justifyContent: "center",
-    },
-    shippingText: {
-      fontSize: 10,
-      color: colors.success,
-      fontFamily: "Inter_400Regular",
     },
   });
 
@@ -176,14 +191,20 @@ export default function ProductCard({ product }: ProductCardProps) {
             contentFit="cover"
             transition={200}
           />
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>-{product.discount}%</Text>
-          </View>
+          {staffPick ? (
+            <View style={styles.staffPickBadge}>
+              <Text style={styles.staffPickText}>⭐ STAFF PICK</Text>
+            </View>
+          ) : (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>-{product.discount}%</Text>
+            </View>
+          )}
           <Pressable style={styles.likeBtn} onPress={handleLike}>
             <Feather
               name="heart"
-              size={14}
-              color={liked ? "#FF4500" : "#888"}
+              size={13}
+              color={liked ? "#e53935" : "#888"}
             />
           </Pressable>
         </View>
@@ -191,24 +212,21 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Text style={styles.name} numberOfLines={2}>
             {product.name}
           </Text>
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-            <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
+          <View style={styles.ratingRow}>
+            <Feather name="star" size={11} color={colors.star} />
+            <Text style={styles.ratingText}>
+              {product.rating} · {formatSold(product.sold)} sold
+            </Text>
           </View>
-          <View style={styles.meta}>
-            <View style={styles.rating}>
-              <Feather name="star" size={10} color={colors.star} />
-              <Text style={styles.ratingText}>
-                {product.rating} ({(product.reviews / 1000).toFixed(1)}k)
-              </Text>
+          <View style={styles.priceRow}>
+            <View style={styles.priceGroup}>
+              <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+              <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
             </View>
             <Pressable style={styles.addBtn} onPress={handleAddToCart}>
-              <Feather name="plus" size={14} color="#fff" />
+              <Feather name="plus" size={16} color="#fff" />
             </Pressable>
           </View>
-          {product.freeShipping && (
-            <Text style={styles.shippingText}>Free shipping</Text>
-          )}
         </View>
       </Animated.View>
     </Pressable>
