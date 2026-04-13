@@ -42,7 +42,7 @@ export default function CartScreen() {
           onPress={() => router.push("/(tabs)/" as never)}
           style={{ marginTop: 28, borderRadius: 16, overflow: "hidden" }}
         >
-          <LinearGradient colors={["#FF4500", "#FF6B35"]} style={{ paddingHorizontal: 32, paddingVertical: 14 }}>
+          <LinearGradient colors={["#1F8C6B", "#27A87E"]} style={{ paddingHorizontal: 32, paddingVertical: 14 }}>
             <Text style={{ fontSize: 15, fontWeight: "700" as const, color: "#fff", fontFamily: "Inter_700Bold" }}>
               Start Shopping
             </Text>
@@ -125,9 +125,9 @@ export default function CartScreen() {
           <Text style={[styles.summaryTitle, { color: colors.foreground }]}>Order Summary</Text>
 
           {[
-            { label: "Subtotal", value: `$${totalPrice.toFixed(2)}` },
-            { label: "Shipping", value: shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}` },
-            { label: "Tax (8%)", value: `$${tax.toFixed(2)}` },
+            { label: "Subtotal", value: `GH₵${totalPrice.toFixed(2)}` },
+            { label: "Shipping", value: shipping === 0 ? "FREE" : `GH₵${shipping.toFixed(2)}` },
+            { label: "Tax (8%)", value: `GH₵${tax.toFixed(2)}` },
           ].map((row) => (
             <View key={row.label} style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{row.label}</Text>
@@ -139,14 +139,14 @@ export default function CartScreen() {
 
           <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
             <Text style={[styles.totalLabel, { color: colors.foreground }]}>Total</Text>
-            <Text style={[styles.totalValue, { color: colors.primary }]}>${orderTotal.toFixed(2)}</Text>
+            <Text style={[styles.totalValue, { color: colors.primary }]}>GH₵{orderTotal.toFixed(2)}</Text>
           </View>
 
           {totalPrice < 35 && (
             <View style={[styles.freeShipBanner, { backgroundColor: colors.accent }]}>
               <Feather name="truck" size={14} color={colors.primary} />
               <Text style={[styles.freeShipText, { color: colors.primary }]}>
-                Add ${(35 - totalPrice).toFixed(2)} more for FREE shipping
+                Add GH₵{(35 - totalPrice).toFixed(2)} more for FREE shipping
               </Text>
             </View>
           )}
@@ -158,13 +158,13 @@ export default function CartScreen() {
       <View style={[styles.checkoutBar, { backgroundColor: colors.card, paddingBottom: bottomPadding + 12, borderTopColor: colors.border }]}>
         <View style={styles.totalPreview}>
           <Text style={[styles.totalPreviewLabel, { color: colors.mutedForeground }]}>Total</Text>
-          <Text style={[styles.totalPreviewValue, { color: colors.primary }]}>${orderTotal.toFixed(2)}</Text>
+          <Text style={[styles.totalPreviewValue, { color: colors.primary }]}>GH₵{orderTotal.toFixed(2)}</Text>
         </View>
         <Pressable
           style={styles.checkoutBtn}
           onPress={() => router.push("/checkout" as never)}
         >
-          <LinearGradient colors={["#FF4500", "#FF6B35"]} style={styles.checkoutBtnGradient}>
+          <LinearGradient colors={["#1F8C6B", "#27A87E"]} style={styles.checkoutBtnGradient}>
             <Text style={styles.checkoutBtnText}>Checkout ({totalItems})</Text>
             <Feather name="arrow-right" size={18} color="#fff" />
           </LinearGradient>

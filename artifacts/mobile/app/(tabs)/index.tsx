@@ -20,6 +20,8 @@ import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import { CATEGORIES, PRODUCTS } from "@/data/products";
+import { fetchProducts } from "@/lib/db";
+import { getProductImageUrl } from "@/lib/supabase";
 
 const { width, height } = Dimensions.get("window");
 const HERO_HEIGHT = Math.min(height * 0.58, 480);
@@ -38,14 +40,43 @@ export default function HomeScreen() {
   const [heroIndex, setHeroIndex] = useState(0);
   const heroRef = useRef<FlatList>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [dbProducts, setDbProducts] = useState<typeof PRODUCTS>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
+  useEffect(() => {
+    fetchProducts()
+      .then((rows) => {
+        if (rows && rows.length > 0) {
+          const mapped = rows.map((r: any, i: number) => {
+            const local = PRODUCTS[i % PRODUCTS.length];
+            const origPrice = r.original_price ?? r.price;
+            return {
+              ...local,
+              id: r.id,
+              name: r.name,
+              price: r.price,
+              originalPrice: origPrice,
+              discount: origPrice > 0 ? Math.round(((origPrice - r.price) / origPrice) * 100) : 0,
+              image: r.image ?? getProductImageUrl(r.id) ?? local.image,
+              images: [r.image ?? getProductImageUrl(r.id) ?? local.image, ...local.images.slice(1)],
+            };
+          });
+          setDbProducts(mapped);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingProducts(false));
+  }, []);
+
+  const allProducts = dbProducts.length > 0 ? dbProducts : PRODUCTS;
+
   const filteredProducts =
     selectedCategory === "all"
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === selectedCategory);
+      ? allProducts
+      : allProducts.filter((p) => p.category === selectedCategory);
 
   useEffect(() => {
     const interval = setInterval(() => {

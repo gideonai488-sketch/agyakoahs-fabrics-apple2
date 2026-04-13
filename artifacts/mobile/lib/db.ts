@@ -29,15 +29,6 @@ export async function fetchMyOrders(userId: string): Promise<DbOrder[]> {
   return (data ?? []) as DbOrder[];
 }
 
-export async function fetchAllOrders(): Promise<DbOrder[]> {
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*, order_items(*)")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []) as DbOrder[];
-}
-
 export async function createOrder(
   order: Omit<DbOrder, "id" | "created_at" | "order_items">,
   items: Omit<DbOrderItem, "id" | "order_id">[]
@@ -63,10 +54,7 @@ export async function updateOrderStatus(
 ) {
   const update: Record<string, unknown> = { status };
   if (paystackRef) update.paystack_reference = paystackRef;
-  const { error } = await supabase
-    .from("orders")
-    .update(update)
-    .eq("id", orderId);
+  const { error } = await supabase.from("orders").update(update).eq("id", orderId);
   if (error) throw error;
 }
 
@@ -95,15 +83,6 @@ export async function removeFromWishlist(userId: string, productId: string) {
   if (error) throw error;
 }
 
-export async function checkIsAdmin(userId: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc("has_role", {
-    user_id: userId,
-    role: "admin",
-  });
-  if (error) return false;
-  return !!data;
-}
-
 export async function initializePaystackPayment(
   orderId: string,
   email: string,
@@ -116,43 +95,23 @@ export async function initializePaystackPayment(
   return data as { authorization_url: string; reference: string; access_code: string };
 }
 
+export async function checkIsAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyPaystackPayment(reference: string) {
   const { data, error } = await supabase.functions.invoke("paystack-verify", {
     body: { reference },
   });
   if (error) throw error;
   return data as { status: string; paid: boolean };
-}
-
-export async function adminUpdateOrderStatus(orderId: string, status: DbOrder["status"]) {
-  return updateOrderStatus(orderId, status);
-}
-
-export async function adminCreateProduct(product: {
-  name: string;
-  price: number;
-  original_price: number;
-  category?: string;
-  description?: string;
-}) {
-  const { data, error } = await supabase
-    .from("products")
-    .insert(product)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-export async function adminUpdateProduct(
-  id: string,
-  updates: Partial<{ name: string; price: number; original_price: number; category: string; description: string }>
-) {
-  const { error } = await supabase.from("products").update(updates).eq("id", id);
-  if (error) throw error;
-}
-
-export async function adminDeleteProduct(id: string) {
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) throw error;
 }
