@@ -26,10 +26,10 @@ export interface Category {
 
 export const CATEGORIES: Category[] = [
   { id: "all", name: "All", icon: "grid", color: "#FF4500" },
-  { id: "fashion", name: "Fashion", icon: "shirt", color: "#e91e63" },
+  { id: "fashion", name: "Fashion", icon: "tag", color: "#e91e63" },
   { id: "electronics", name: "Electronics", icon: "headphones", color: "#2196f3" },
   { id: "home", name: "Home", icon: "home", color: "#ff9800" },
-  { id: "beauty", name: "Beauty", icon: "sparkles", color: "#9c27b0" },
+  { id: "beauty", name: "Beauty", icon: "sun", color: "#9c27b0" },
   { id: "sports", name: "Sports", icon: "activity", color: "#4caf50" },
   { id: "toys", name: "Toys", icon: "gift", color: "#f44336" },
   { id: "food", name: "Food", icon: "coffee", color: "#795548" },
