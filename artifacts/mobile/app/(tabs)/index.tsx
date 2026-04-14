@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -35,10 +35,10 @@ export default function HomeScreen() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [heroIndex, setHeroIndex] = useState(0);
-  const heroRef = useRef<FlatList>(null);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const [dbProducts, setDbProducts] = useState<typeof PRODUCTS>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -70,7 +70,7 @@ export default function HomeScreen() {
           setDbProducts(mapped);
         }
       })
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoadingProducts(false));
   }, []);
 
@@ -103,7 +103,6 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }).start(() => {
         setHeroIndex(next);
-        heroRef.current?.scrollToIndex({ index: next, animated: false });
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 400,

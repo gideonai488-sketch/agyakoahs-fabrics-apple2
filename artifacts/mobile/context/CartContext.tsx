@@ -29,14 +29,16 @@ const CART_KEY = "@shopping_cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     loadCart();
   }, []);
 
   useEffect(() => {
+    if (!loaded) return;
     AsyncStorage.setItem(CART_KEY, JSON.stringify(items)).catch(() => {});
-  }, [items]);
+  }, [items, loaded]);
 
   async function loadCart() {
     try {
@@ -44,6 +46,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (json) setItems(JSON.parse(json));
     } catch {
       // ignore
+    } finally {
+      setLoaded(true);
     }
   }
 
