@@ -116,7 +116,7 @@ export default function LoginScreen() {
       borderColor: "transparent",
     },
     inputContainerFocused: {
-      borderColor: "#FF4500",
+      borderColor: "#1F8C6B",
       backgroundColor: "#fff",
     },
     input: {
