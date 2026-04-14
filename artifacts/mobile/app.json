@@ -17,7 +17,7 @@
       "supportsTablet": false
     },
     "android": {
-      "package": "com.shopnow.app",
+      "package": "com.agyakoahsfabrics.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FF4500"
