@@ -27,7 +27,7 @@ const SECTIONS = [
   {
     title: "Payment Information",
     content:
-      "All payment transactions are securely processed by Paystack. ShopHub does not store your card or mobile money details. Paystack's own privacy policy applies to payment data.",
+      "All payment transactions are securely processed by Paystack. Agyakoahs Fabrics does not store your card or mobile money details. Paystack's own privacy policy applies to payment data.",
   },
   {
     title: "Data Sharing",
@@ -52,7 +52,7 @@ const SECTIONS = [
   {
     title: "Contact Us",
     content:
-      "For privacy-related questions, contact us at privacy@shophub.app or write to ShopHub Privacy, Accra, Ghana.",
+      "For privacy-related questions, contact us at privacy@agyakoahsfabrics.com or write to Agyakoahs Fabrics Privacy, Accra, Ghana.",
   },
 ];
 
@@ -84,7 +84,7 @@ export default function PrivacyPolicyScreen() {
         </View>
 
         <Text style={[styles.intro, { color: colors.mutedForeground }]}>
-          ShopHub ("we", "our", or "us") is committed to protecting your privacy. This policy explains how we collect, use, and protect your information.
+          Agyakoahs Fabrics ("we", "our", or "us") is committed to protecting your privacy. This policy explains how we collect, use, and protect your information.
         </Text>
 
         {SECTIONS.map((section, idx) => (

@@ -120,7 +120,7 @@ export default function PaymentMethodsScreen() {
         <View style={[styles.noteBox, { backgroundColor: colors.accent }]}>
           <Feather name="info" size={15} color={colors.primary} />
           <Text style={{ flex: 1, fontSize: 12, color: colors.primary, fontFamily: "Inter_400Regular", lineHeight: 18 }}>
-            ShopHub does not store your payment details. All transactions are handled securely by Paystack.
+            Agyakoahs Fabrics does not store your payment details. All transactions are handled securely by Paystack.
           </Text>
         </View>
       </ScrollView>

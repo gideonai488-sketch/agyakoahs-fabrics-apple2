@@ -419,7 +419,7 @@ export default function HomeScreen() {
           {/* Floating top nav */}
           <View style={s.floatingBar}>
             <Text style={s.brandName}>
-              Shop<Text style={s.brandDot}>Hub</Text>
+              Agyakoahs<Text style={s.brandDot}> Fabrics</Text>
             </Text>
             <View style={s.floatingIcons}>
               <Pressable style={s.floatingIcon} onPress={() => router.push("/search" as never)}>

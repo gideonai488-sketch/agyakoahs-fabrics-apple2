@@ -66,7 +66,7 @@ export default function PersonalInfoScreen() {
           </View>
           <View>
             <Text style={[styles.avatarName, { color: colors.foreground }]}>{name || "Your Name"}</Text>
-            <Text style={[styles.avatarSub, { color: colors.mutedForeground }]}>ShopHub Member</Text>
+            <Text style={[styles.avatarSub, { color: colors.mutedForeground }]}>Agyakoahs Fabrics Member</Text>
           </View>
         </View>
 

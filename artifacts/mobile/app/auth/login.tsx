@@ -208,7 +208,7 @@ export default function LoginScreen() {
         <View style={styles.logoContainer}>
           <Feather name="shopping-bag" size={32} color="#fff" />
         </View>
-        <Text style={styles.appName}>ShopHub</Text>
+        <Text style={styles.appName}>Agyakoahs Fabrics</Text>
         <Text style={styles.tagline}>Millions of products, unbeatable prices</Text>
       </LinearGradient>
 
