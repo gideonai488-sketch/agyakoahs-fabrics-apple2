@@ -116,7 +116,7 @@ export default function LoginScreen() {
       borderColor: "transparent",
     },
     inputContainerFocused: {
-      borderColor: "#1F8C6B",
+      borderColor: "#FF4500",
       backgroundColor: "#fff",
     },
     input: {
@@ -209,7 +209,7 @@ export default function LoginScreen() {
           <Feather name="shopping-bag" size={32} color="#fff" />
         </View>
         <Text style={styles.appName}>Agyakoahs Fabrics</Text>
-        <Text style={styles.tagline}>Millions of products, unbeatable prices</Text>
+        <Text style={styles.tagline}>Quality fabrics & products delivered to you</Text>
       </LinearGradient>
 
       <ScrollView
