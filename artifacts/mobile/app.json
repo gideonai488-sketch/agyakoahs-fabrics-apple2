@@ -39,6 +39,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a827905e-62c8-4ebc-9c8b-d8915d0fa07d"
+      }
+    },
+    "owner": "genesisholdingss-organization"
   }
 }
