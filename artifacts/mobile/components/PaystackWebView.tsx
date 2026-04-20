@@ -14,18 +14,17 @@ import { WebView, WebViewNavigation } from "react-native-webview";
 
 import { useColors } from "@/hooks/useColors";
 
-const CALLBACK_HOST = "agyakoahsfabrics.com";
-const CALLBACK_PATH = "/payment-callback";
+const CALLBACK_HOST = "agf.callback";
 
 interface Props {
   visible: boolean;
-  authorizationUrl: string;
+  htmlContent: string;
   reference: string;
   onSuccess: (reference: string) => void;
   onCancel: () => void;
 }
 
-export default function PaystackWebView({ visible, authorizationUrl, reference, onSuccess, onCancel }: Props) {
+export default function PaystackWebView({ visible, htmlContent, reference, onSuccess, onCancel }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
@@ -45,26 +44,29 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
   function handleNavigationChange(navState: WebViewNavigation) {
     const url = navState.url ?? "";
 
-    const isCallback =
-      url.includes(CALLBACK_HOST + CALLBACK_PATH) ||
-      (url.includes("trxref=") && !url.includes("checkout.paystack.com")) ||
-      (url.includes("reference=") && url.includes("paystack"));
+    if (hasDetected) return;
 
-    if (isCallback && !hasDetected) {
+    // Detect our custom success callback
+    if (url.includes(CALLBACK_HOST + "/success")) {
       setHasDetected(true);
-
       let detectedRef = reference;
       try {
         const parsed = new URL(url);
         detectedRef =
-          parsed.searchParams.get("trxref") ??
           parsed.searchParams.get("reference") ??
+          parsed.searchParams.get("trxref") ??
           reference;
       } catch {
         // use original reference
       }
-
       onSuccess(detectedRef);
+      return;
+    }
+
+    // Detect cancellation
+    if (url.includes(CALLBACK_HOST + "/cancelled") || url.includes(CALLBACK_HOST + "/error")) {
+      setHasDetected(true);
+      onCancel();
     }
   }
 
@@ -73,16 +75,6 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
       onCancel();
     }
   }
-
-  const injectedJS = `
-    (function() {
-      var originalOpen = window.open;
-      window.open = function(url) {
-        window.location.href = url;
-      };
-    })();
-    true;
-  `;
 
   return (
     <Modal
@@ -111,14 +103,13 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
           </Text>
         </View>
 
-        {authorizationUrl ? (
+        {htmlContent ? (
           <WebView
             ref={webViewRef}
-            source={{ uri: authorizationUrl }}
+            source={{ html: htmlContent }}
             onNavigationStateChange={handleNavigationChange}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => setLoading(false)}
-            injectedJavaScript={injectedJS}
             javaScriptEnabled
             domStorageEnabled
             startInLoadingState

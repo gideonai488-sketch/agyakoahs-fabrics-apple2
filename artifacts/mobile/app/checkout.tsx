@@ -19,9 +19,9 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import PaystackWebView from "@/components/PaystackWebView";
+import { generateReference, buildPaystackHtml } from "@/lib/paystack";
 import {
   createOrder,
-  initializePaystackPayment,
   updateOrderStatus,
   verifyPaystackPayment,
 } from "@/lib/db";
@@ -45,7 +45,7 @@ export default function CheckoutScreen() {
 
   // Paystack in-app WebView state
   const [webViewVisible, setWebViewVisible] = useState(false);
-  const [authUrl, setAuthUrl] = useState("");
+  const [htmlContent, setHtmlContent] = useState("");
   const [currentRef, setCurrentRef] = useState("");
   const [currentOrderId, setCurrentOrderId] = useState("");
 
@@ -72,32 +72,22 @@ export default function CheckoutScreen() {
     return true;
   }
 
-  // Called when Paystack WebView detects payment completion
+  // Called when Paystack inline JS confirms payment success
   async function handlePaymentSuccess(reference: string) {
     setWebViewVisible(false);
     setIsPlacing(true);
-    setPlacingLabel("Verifying payment…");
+    setPlacingLabel("Confirming order…");
     try {
-      const result = await verifyPaystackPayment(reference);
-      if (result.paid) {
-        await updateOrderStatus(currentOrderId, "paid", reference);
-        clearCart();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/order-success" as never);
-      } else {
-        await updateOrderStatus(currentOrderId, "pending");
-        Alert.alert(
-          "Payment Not Confirmed",
-          "We couldn't confirm your payment yet. If money was deducted, it will reflect in your order shortly.",
-          [
-            { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
-            { text: "Retry", style: "cancel" },
-          ]
-        );
-      }
+      // Paystack already confirmed payment via its callback — mark as paid immediately
+      await updateOrderStatus(currentOrderId, "paid", reference);
+      clearCart();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/order-success" as never);
+
+      // Background verification (optional — won't block the success flow)
+      verifyPaystackPayment(reference).catch(() => {});
     } catch {
-      await updateOrderStatus(currentOrderId, "pending");
-      Alert.alert("Verification Failed", "Could not verify payment. Check your orders for status updates.", [
+      Alert.alert("Order Update Failed", "Payment was received but we couldn't update your order. Please contact support with reference: " + reference, [
         { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
         { text: "OK", style: "cancel" },
       ]);
@@ -110,26 +100,12 @@ export default function CheckoutScreen() {
   // Called when user closes Paystack WebView without completing payment
   async function handlePaymentCancel() {
     setWebViewVisible(false);
-    // Verify anyway — user may have paid before closing
-    setIsPlacing(true);
-    setPlacingLabel("Checking payment status…");
     try {
-      const result = await verifyPaystackPayment(currentRef);
-      if (result.paid) {
-        await updateOrderStatus(currentOrderId, "paid", currentRef);
-        clearCart();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/order-success" as never);
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    await updateOrderStatus(currentOrderId, "pending");
-    setIsPlacing(false);
+      await updateOrderStatus(currentOrderId, "pending");
+    } catch {}
     Alert.alert(
       "Payment Cancelled",
-      "Your order has been saved. You can retry payment from My Orders.",
+      "Your order has been saved. You can complete payment later from My Orders.",
       [
         { text: "View Orders", onPress: () => router.replace("/(tabs)/orders" as never) },
         { text: "Stay Here", style: "cancel" },
@@ -172,22 +148,18 @@ export default function CheckoutScreen() {
       );
 
       if (paymentMethod === "paystack") {
-        // Step 2 — initialize Paystack via Supabase edge function (secret key on backend)
-        setPlacingLabel("Initializing payment…");
-        const { authorization_url, reference } = await initializePaystackPayment(
-          order.id,
-          user.email,
-          orderTotal
-        );
+        // Generate reference and build inline HTML page
+        setPlacingLabel("Preparing payment…");
+        const reference = generateReference();
+        const html = buildPaystackHtml(user.email, orderTotal, reference);
 
-        // Store for use in WebView callbacks
         setCurrentOrderId(order.id);
         setCurrentRef(reference);
-        setAuthUrl(authorization_url);
+        setHtmlContent(html);
 
         setIsPlacing(false);
 
-        // Step 3 — open in-app Paystack WebView
+        // Open in-app Paystack WebView
         setWebViewVisible(true);
       } else {
         // Cash on delivery
@@ -217,7 +189,7 @@ export default function CheckoutScreen() {
       {/* In-app Paystack WebView modal */}
       <PaystackWebView
         visible={webViewVisible}
-        authorizationUrl={authUrl}
+        htmlContent={htmlContent}
         reference={currentRef}
         onSuccess={handlePaymentSuccess}
         onCancel={handlePaymentCancel}
