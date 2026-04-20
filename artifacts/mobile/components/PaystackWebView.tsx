@@ -106,15 +106,24 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
         {htmlContent ? (
           <WebView
             ref={webViewRef}
-            source={{ html: htmlContent }}
+            source={{ html: htmlContent, baseUrl: "https://js.paystack.co" }}
             onNavigationStateChange={handleNavigationChange}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => setLoading(false)}
             javaScriptEnabled
             domStorageEnabled
             startInLoadingState
+            originWhitelist={["*"]}
+            mixedContentMode="always"
+            allowsInlineMediaPlayback
             scalesPageToFit={Platform.OS === "android"}
             style={{ flex: 1 }}
+            injectedJavaScript={`
+              (function() {
+                window.open = function(url) { window.location.href = url; };
+              })();
+              true;
+            `}
             renderLoading={() => (
               <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={colors.primary} />
