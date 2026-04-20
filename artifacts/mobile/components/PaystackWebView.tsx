@@ -18,13 +18,13 @@ const CALLBACK_HOST = "agf.callback";
 
 interface Props {
   visible: boolean;
-  htmlContent: string;
+  url: string;
   reference: string;
   onSuccess: (reference: string) => void;
   onCancel: () => void;
 }
 
-export default function PaystackWebView({ visible, htmlContent, reference, onSuccess, onCancel }: Props) {
+export default function PaystackWebView({ visible, url, reference, onSuccess, onCancel }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const webViewRef = useRef<WebView>(null);
@@ -33,7 +33,6 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  // Reset state every time a new payment session opens
   useEffect(() => {
     if (visible) {
       setHasDetected(false);
@@ -42,38 +41,31 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
   }, [visible]);
 
   function handleNavigationChange(navState: WebViewNavigation) {
-    const url = navState.url ?? "";
-
+    const navUrl = navState.url ?? "";
     if (hasDetected) return;
 
-    // Detect our custom success callback
-    if (url.includes(CALLBACK_HOST + "/success")) {
+    if (navUrl.includes(CALLBACK_HOST + "/success")) {
       setHasDetected(true);
       let detectedRef = reference;
       try {
-        const parsed = new URL(url);
+        const parsed = new URL(navUrl);
         detectedRef =
           parsed.searchParams.get("reference") ??
           parsed.searchParams.get("trxref") ??
           reference;
-      } catch {
-        // use original reference
-      }
+      } catch {}
       onSuccess(detectedRef);
       return;
     }
 
-    // Detect cancellation
-    if (url.includes(CALLBACK_HOST + "/cancelled") || url.includes(CALLBACK_HOST + "/error")) {
+    if (navUrl.includes(CALLBACK_HOST + "/cancelled") || navUrl.includes(CALLBACK_HOST + "/error")) {
       setHasDetected(true);
       onCancel();
     }
   }
 
   function handleClose() {
-    if (!hasDetected) {
-      onCancel();
-    }
+    if (!hasDetected) onCancel();
   }
 
   return (
@@ -103,10 +95,10 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
           </Text>
         </View>
 
-        {htmlContent ? (
+        {url ? (
           <WebView
             ref={webViewRef}
-            source={{ html: htmlContent, baseUrl: "https://js.paystack.co" }}
+            source={{ uri: url }}
             onNavigationStateChange={handleNavigationChange}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => setLoading(false)}
@@ -128,7 +120,7 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
               <View style={[StyleSheet.absoluteFill, styles.loadingOverlay, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-                  Loading secure payment…
+                  Opening payment…
                 </Text>
               </View>
             )}
@@ -136,17 +128,20 @@ export default function PaystackWebView({ visible, htmlContent, reference, onSuc
         ) : (
           <View style={[styles.loadingOverlay, { flex: 1, backgroundColor: colors.background }]}>
             <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        )}
-
-        {loading && (
-          <View style={[StyleSheet.absoluteFill, { top: 100 }, styles.loadingOverlay, { backgroundColor: colors.background }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-              Loading secure payment…
+              Preparing payment…
             </Text>
           </View>
         )}
+
+        {loading && url ? (
+          <View style={[StyleSheet.absoluteFill, { top: 100 }, styles.loadingOverlay, { backgroundColor: colors.background }]}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+              Opening payment…
+            </Text>
+          </View>
+        ) : null}
       </View>
     </Modal>
   );

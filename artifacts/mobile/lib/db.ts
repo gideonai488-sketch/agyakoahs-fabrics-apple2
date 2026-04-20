@@ -96,7 +96,7 @@ export async function initializePaystackPayment(
       amount: toPesewas(amountGhc),
       public_key: PAYSTACK_PUBLIC_KEY,
       currency: "GHS",
-      callback_url: "https://agyakoahsfabrics.com/payment-callback",
+      callback_url: "https://agf.callback/success",
     },
   });
   if (error) throw error;

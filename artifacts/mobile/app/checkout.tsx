@@ -19,10 +19,10 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import PaystackWebView from "@/components/PaystackWebView";
-import { generateReference, buildPaystackHtml, PAYSTACK_PUBLIC_KEY, toPesewas } from "@/lib/paystack";
 import {
   createOrder,
   updateOrderStatus,
+  initializePaystackPayment,
   verifyPaystackPayment,
 } from "@/lib/db";
 
@@ -45,7 +45,7 @@ export default function CheckoutScreen() {
 
   // Paystack in-app WebView state
   const [webViewVisible, setWebViewVisible] = useState(false);
-  const [htmlContent, setHtmlContent] = useState("");
+  const [payUrl, setPayUrl] = useState("");
   const [currentRef, setCurrentRef] = useState("");
   const [currentOrderId, setCurrentOrderId] = useState("");
 
@@ -148,73 +148,22 @@ export default function CheckoutScreen() {
       );
 
       if (paymentMethod === "paystack") {
-        setPlacingLabel("Preparing payment…");
-        const reference = generateReference();
+        setPlacingLabel("Opening Payment…");
+
+        // Call Supabase Edge Function — it holds the secret key
+        const payment = await initializePaystackPayment(order.id, user.email, orderTotal);
+        const { authorization_url, reference } = payment;
+
         setCurrentOrderId(order.id);
         setCurrentRef(reference);
 
         if (Platform.OS === "web") {
-          // Web browser: load Paystack SDK directly into the page
-          const orderId = order.id;
+          // On web, redirect to Paystack checkout in the same window
           setIsPlacing(false);
-          await new Promise<void>((resolve) => {
-            function openPopup() {
-              try {
-                if (!(window as any).PaystackPop) {
-                  Alert.alert("Payment Error", "Paystack failed to load. Please check your internet and try again.");
-                  resolve();
-                  return;
-                }
-                const handler = (window as any).PaystackPop.setup({
-                  key: PAYSTACK_PUBLIC_KEY,
-                  email: user!.email,
-                  amount: toPesewas(orderTotal),
-                  currency: "GHS",
-                  ref: reference,
-                  label: "Agyakoahs Fabrics",
-                  callback: async (response: any) => {
-                    const ref = response.reference ?? reference;
-                    try {
-                      await updateOrderStatus(orderId, "paid", ref);
-                      clearCart();
-                      router.replace("/order-success" as never);
-                    } catch {
-                      Alert.alert("Order Error", "Payment received but order update failed. Contact support with ref: " + ref);
-                    }
-                    resolve();
-                  },
-                  onClose: async () => {
-                    try { await updateOrderStatus(orderId, "pending"); } catch {}
-                    Alert.alert("Payment Cancelled", "Your order was saved. You can retry from My Orders.");
-                    resolve();
-                  },
-                });
-                handler.openIframe();
-              } catch (e: any) {
-                Alert.alert("Payment Error", e?.message ?? "Could not start payment. Please try again.");
-                resolve();
-              }
-            }
-
-            const existing = document.getElementById("paystack-inline-js");
-            if (existing && (window as any).PaystackPop) {
-              openPopup();
-            } else {
-              const script = document.createElement("script");
-              script.id = "paystack-inline-js";
-              script.src = "https://js.paystack.co/v1/inline.js";
-              script.onload = openPopup;
-              script.onerror = () => {
-                Alert.alert("Payment Error", "Could not load Paystack. Check your internet and try again.");
-                resolve();
-              };
-              document.head.appendChild(script);
-            }
-          });
+          window.location.href = authorization_url;
         } else {
-          // Native (Android/iOS): use in-app WebView
-          const html = buildPaystackHtml(user.email, orderTotal, reference);
-          setHtmlContent(html);
+          // Native: open Paystack checkout in in-app WebView
+          setPayUrl(authorization_url);
           setIsPlacing(false);
           setWebViewVisible(true);
         }
@@ -246,7 +195,7 @@ export default function CheckoutScreen() {
       {/* In-app Paystack WebView modal */}
       <PaystackWebView
         visible={webViewVisible}
-        htmlContent={htmlContent}
+        url={payUrl}
         reference={currentRef}
         onSuccess={handlePaymentSuccess}
         onCancel={handlePaymentCancel}
