@@ -72,15 +72,16 @@ export default function ProductDetailScreen() {
   useEffect(() => {
     async function load() {
       setIsLoading(true);
+      const productId = Array.isArray(id) ? id[0] : id;
       try {
-        const dbProd = await fetchProductById(id ?? "");
-        const imageUrl = dbProd?.image_url || getFallbackImage(id ?? "");
+        const dbProd = await fetchProductById(productId ?? "");
+        const imageUrl = dbProd?.image_url || getFallbackImage(productId ?? "");
         const origPrice = dbProd?.original_price ?? dbProd?.price ?? 0;
         const price = dbProd?.price ?? 0;
         const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
 
         setProduct({
-          id: dbProd?.id ?? id ?? "",
+          id: dbProd?.id ?? productId ?? "",
           name: dbProd?.name ?? "",
           price,
           originalPrice: origPrice,
