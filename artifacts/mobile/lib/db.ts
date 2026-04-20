@@ -1,5 +1,5 @@
 import { supabase, DbOrder, DbOrderItem, DbWishlist } from "./supabase";
-import { PAYSTACK_PUBLIC_KEY, toPesewas } from "./paystack";
+import { toPesewas } from "./paystack";
 
 export async function fetchProducts() {
   const { data, error } = await supabase
@@ -94,7 +94,6 @@ export async function initializePaystackPayment(
       order_id: orderId,
       email,
       amount: toPesewas(amountGhc),
-      public_key: PAYSTACK_PUBLIC_KEY,
       currency: "GHS",
       callback_url: "https://agf.callback/success",
     },

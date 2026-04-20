@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { WebView, WebViewNavigation } from "react-native-webview";
+import { WebView, WebViewNavigation, WebViewRequest } from "react-native-webview";
 
 import { useColors } from "@/hooks/useColors";
 
@@ -40,9 +40,8 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
     }
   }, [visible]);
 
-  function handleNavigationChange(navState: WebViewNavigation) {
-    const navUrl = navState.url ?? "";
-    if (hasDetected) return;
+  function detectCallback(navUrl: string): boolean {
+    if (!navUrl || hasDetected) return false;
 
     if (navUrl.includes(CALLBACK_HOST + "/success")) {
       setHasDetected(true);
@@ -55,13 +54,33 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
           reference;
       } catch {}
       onSuccess(detectedRef);
-      return;
+      return true;
     }
 
-    if (navUrl.includes(CALLBACK_HOST + "/cancelled") || navUrl.includes(CALLBACK_HOST + "/error")) {
+    if (
+      navUrl.includes(CALLBACK_HOST + "/cancelled") ||
+      navUrl.includes(CALLBACK_HOST + "/error")
+    ) {
       setHasDetected(true);
       onCancel();
+      return true;
     }
+
+    return false;
+  }
+
+  function handleNavigationChange(navState: WebViewNavigation) {
+    detectCallback(navState.url ?? "");
+  }
+
+  function handleShouldStartLoadWithRequest(request: WebViewRequest): boolean {
+    const reqUrl = request.url ?? "";
+
+    if (detectCallback(reqUrl)) {
+      return false;
+    }
+
+    return true;
   }
 
   function handleClose() {
@@ -100,6 +119,7 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
             ref={webViewRef}
             source={{ uri: url }}
             onNavigationStateChange={handleNavigationChange}
+            onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
             onLoadStart={() => setLoading(true)}
             onLoadEnd={() => setLoading(false)}
             javaScriptEnabled
@@ -112,7 +132,7 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
             style={{ flex: 1 }}
             injectedJavaScript={`
               (function() {
-                window.open = function(url) { window.location.href = url; };
+                window.open = function(u) { window.location.href = u; };
               })();
               true;
             `}

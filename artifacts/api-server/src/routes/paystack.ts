@@ -59,4 +59,44 @@ router.post("/paystack/initialize", async (req, res) => {
   }
 });
 
+router.post("/paystack/verify", async (req, res) => {
+  const secretKey = process.env["PAYSTACK_SECRET_KEY"];
+  if (!secretKey) {
+    res.status(500).json({ error: "Payment service not configured." });
+    return;
+  }
+
+  const { reference } = req.body as { reference?: string };
+  if (!reference) {
+    res.status(400).json({ error: "reference is required." });
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        headers: { Authorization: `Bearer ${secretKey}` },
+      }
+    );
+
+    const data = (await response.json()) as any;
+
+    if (!response.ok || !data?.status) {
+      res.status(502).json({ error: data?.message ?? "Paystack verification error." });
+      return;
+    }
+
+    const txStatus = data.data?.status;
+    res.json({
+      status: txStatus,
+      paid: txStatus === "success",
+      amount: data.data?.amount,
+      reference: data.data?.reference,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message ?? "Failed to verify payment." });
+  }
+});
+
 export default router;
