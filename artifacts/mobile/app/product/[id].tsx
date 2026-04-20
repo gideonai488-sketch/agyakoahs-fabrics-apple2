@@ -346,7 +346,7 @@ export default function ProductDetailScreen() {
               <View>
                 <Text style={[styles.optionTitle, { color: colors.foreground, marginBottom: 2 }]}>You May Also Like</Text>
                 <Text style={{ fontSize: 12, color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>
-                  Similar products in {product ? (localProduct?.category ?? "this category") : "this category"}
+                  More products you might like
                 </Text>
               </View>
             </View>
