@@ -155,29 +155,49 @@ export default function CheckoutScreen() {
 
         if (Platform.OS === "web") {
           // Web browser: load Paystack SDK directly into the page
+          const orderId = order.id;
           setIsPlacing(false);
           await new Promise<void>((resolve) => {
-            const existing = document.getElementById("paystack-inline-js");
             function openPopup() {
-              const handler = (window as any).PaystackPop.setup({
-                key: PAYSTACK_PUBLIC_KEY,
-                email: user!.email,
-                amount: toPesewas(orderTotal),
-                currency: "GHS",
-                ref: reference,
-                label: "Agyakoahs Fabrics",
-                callback: async (response: any) => {
-                  await handlePaymentSuccess(response.reference ?? reference);
+              try {
+                if (!(window as any).PaystackPop) {
+                  Alert.alert("Payment Error", "Paystack failed to load. Please check your internet and try again.");
                   resolve();
-                },
-                onClose: async () => {
-                  await handlePaymentCancel();
-                  resolve();
-                },
-              });
-              handler.openIframe();
+                  return;
+                }
+                const handler = (window as any).PaystackPop.setup({
+                  key: PAYSTACK_PUBLIC_KEY,
+                  email: user!.email,
+                  amount: toPesewas(orderTotal),
+                  currency: "GHS",
+                  ref: reference,
+                  label: "Agyakoahs Fabrics",
+                  callback: async (response: any) => {
+                    const ref = response.reference ?? reference;
+                    try {
+                      await updateOrderStatus(orderId, "paid", ref);
+                      clearCart();
+                      router.replace("/order-success" as never);
+                    } catch {
+                      Alert.alert("Order Error", "Payment received but order update failed. Contact support with ref: " + ref);
+                    }
+                    resolve();
+                  },
+                  onClose: async () => {
+                    try { await updateOrderStatus(orderId, "pending"); } catch {}
+                    Alert.alert("Payment Cancelled", "Your order was saved. You can retry from My Orders.");
+                    resolve();
+                  },
+                });
+                handler.openIframe();
+              } catch (e: any) {
+                Alert.alert("Payment Error", e?.message ?? "Could not start payment. Please try again.");
+                resolve();
+              }
             }
-            if (existing) {
+
+            const existing = document.getElementById("paystack-inline-js");
+            if (existing && (window as any).PaystackPop) {
               openPopup();
             } else {
               const script = document.createElement("script");
@@ -185,7 +205,7 @@ export default function CheckoutScreen() {
               script.src = "https://js.paystack.co/v1/inline.js";
               script.onload = openPopup;
               script.onerror = () => {
-                Alert.alert("Payment Error", "Could not load payment. Check your internet and try again.");
+                Alert.alert("Payment Error", "Could not load Paystack. Check your internet and try again.");
                 resolve();
               };
               document.head.appendChild(script);
