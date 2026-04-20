@@ -19,7 +19,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import PaystackWebView from "@/components/PaystackWebView";
-import { generateReference, buildPaystackHtml } from "@/lib/paystack";
+import { generateReference, buildPaystackHtml, PAYSTACK_PUBLIC_KEY, toPesewas } from "@/lib/paystack";
 import {
   createOrder,
   updateOrderStatus,
@@ -148,19 +148,56 @@ export default function CheckoutScreen() {
       );
 
       if (paymentMethod === "paystack") {
-        // Generate reference and build inline HTML page
         setPlacingLabel("Preparing payment…");
         const reference = generateReference();
-        const html = buildPaystackHtml(user.email, orderTotal, reference);
-
         setCurrentOrderId(order.id);
         setCurrentRef(reference);
-        setHtmlContent(html);
 
-        setIsPlacing(false);
-
-        // Open in-app Paystack WebView
-        setWebViewVisible(true);
+        if (Platform.OS === "web") {
+          // Web browser: load Paystack SDK directly into the page
+          setIsPlacing(false);
+          await new Promise<void>((resolve) => {
+            const existing = document.getElementById("paystack-inline-js");
+            function openPopup() {
+              const handler = (window as any).PaystackPop.setup({
+                key: PAYSTACK_PUBLIC_KEY,
+                email: user!.email,
+                amount: toPesewas(orderTotal),
+                currency: "GHS",
+                ref: reference,
+                label: "Agyakoahs Fabrics",
+                callback: async (response: any) => {
+                  await handlePaymentSuccess(response.reference ?? reference);
+                  resolve();
+                },
+                onClose: async () => {
+                  await handlePaymentCancel();
+                  resolve();
+                },
+              });
+              handler.openIframe();
+            }
+            if (existing) {
+              openPopup();
+            } else {
+              const script = document.createElement("script");
+              script.id = "paystack-inline-js";
+              script.src = "https://js.paystack.co/v1/inline.js";
+              script.onload = openPopup;
+              script.onerror = () => {
+                Alert.alert("Payment Error", "Could not load payment. Check your internet and try again.");
+                resolve();
+              };
+              document.head.appendChild(script);
+            }
+          });
+        } else {
+          // Native (Android/iOS): use in-app WebView
+          const html = buildPaystackHtml(user.email, orderTotal, reference);
+          setHtmlContent(html);
+          setIsPlacing(false);
+          setWebViewVisible(true);
+        }
       } else {
         // Cash on delivery
         await updateOrderStatus(order.id, "processing");
