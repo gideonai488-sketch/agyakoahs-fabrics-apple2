@@ -19,8 +19,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { getProductById } from "@/data/products";
-import { fetchProductById, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/db";
+import { getProductById, PRODUCTS } from "@/data/products";
+import { fetchProductById, fetchProducts, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/db";
 
 const { width } = Dimensions.get("window");
 
@@ -52,6 +52,7 @@ export default function ProductDetailScreen() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState<typeof PRODUCTS>([]);
 
   const localProduct = getProductById(id ?? "");
 
@@ -123,6 +124,37 @@ export default function ProductDetailScreen() {
 
     load();
     checkWishlist();
+
+    // Load related products from same category
+    fetchProducts().then((rows) => {
+      if (!rows || rows.length === 0) return;
+      const mapped = rows.map((r: any, i: number) => {
+        const local = PRODUCTS[i % PRODUCTS.length];
+        const imgUrl = r.image_url || local.image;
+        const origPrice = r.original_price ?? r.price;
+        return {
+          ...local,
+          id: r.id,
+          name: r.name,
+          price: r.price,
+          originalPrice: origPrice,
+          discount: origPrice > 0 ? Math.round(((origPrice - r.price) / origPrice) * 100) : 0,
+          image: imgUrl,
+          images: [imgUrl],
+          rating: r.rating ?? local.rating,
+          sold: r.sold ?? local.sold,
+          category: r.category ?? local.category,
+        };
+      });
+      const currentCat = localProduct?.category;
+      const related = mapped
+        .filter((p: any) => p.id !== id && (!currentCat || p.category === currentCat))
+        .slice(0, 8);
+      setRelatedProducts(related.length >= 2 ? related : mapped.filter((p: any) => p.id !== id).slice(0, 8));
+    }).catch(() => {
+      const fallback = PRODUCTS.filter((p) => p.id !== id && p.category === (localProduct?.category ?? "")).slice(0, 6);
+      setRelatedProducts(fallback.length >= 2 ? fallback : PRODUCTS.filter((p) => p.id !== id).slice(0, 6));
+    });
   }, [id]);
 
   async function toggleWishlist() {
@@ -328,6 +360,41 @@ export default function ProductDetailScreen() {
           </View>
         ) : null}
 
+        {relatedProducts.length > 0 && (
+          <View style={{ marginTop: 8, paddingTop: 16, paddingBottom: 8, backgroundColor: colors.card }}>
+            <View style={{ flexDirection: "row" as const, alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 14 }}>
+              <View>
+                <Text style={[styles.optionTitle, { color: colors.foreground, marginBottom: 2 }]}>You May Also Like</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, fontFamily: "Inter_400Regular" }}>
+                  Similar products in {product ? (localProduct?.category ?? "this category") : "this category"}
+                </Text>
+              </View>
+            </View>
+            <FlatList
+              data={relatedProducts}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+              keyExtractor={(item) => `rel-${item.id}`}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={{ width: 130, borderRadius: 14, overflow: "hidden" as const, backgroundColor: colors.background }}
+                  onPress={() => router.push(`/product/${item.id}` as never)}
+                >
+                  <Image source={{ uri: item.image }} style={{ width: 130, height: 130 }} contentFit="cover" />
+                  <View style={{ padding: 8 }}>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 4 }} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700" as const, fontFamily: "Inter_700Bold", color: colors.primary }}>
+                      GH₵{item.price.toFixed(2)}
+                    </Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
 
         <View style={{ height: bottomPadding + 100 }} />
       </ScrollView>

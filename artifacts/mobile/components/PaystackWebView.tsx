@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -14,7 +14,7 @@ import { WebView, WebViewNavigation } from "react-native-webview";
 
 import { useColors } from "@/hooks/useColors";
 
-const CALLBACK_HOST = "shophub.app";
+const CALLBACK_HOST = "agyakoahsfabrics.com";
 const CALLBACK_PATH = "/payment-callback";
 
 interface Props {
@@ -34,10 +34,17 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
+  // Reset state every time a new payment session opens
+  useEffect(() => {
+    if (visible) {
+      setHasDetected(false);
+      setLoading(true);
+    }
+  }, [visible]);
+
   function handleNavigationChange(navState: WebViewNavigation) {
     const url = navState.url ?? "";
 
-    // Detect Paystack's callback redirect — contains our callback host or trxref param
     const isCallback =
       url.includes(CALLBACK_HOST + CALLBACK_PATH) ||
       (url.includes("trxref=") && !url.includes("checkout.paystack.com")) ||
@@ -46,11 +53,11 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
     if (isCallback && !hasDetected) {
       setHasDetected(true);
 
-      // Extract reference from URL if present
       let detectedRef = reference;
       try {
         const parsed = new URL(url);
-        detectedRef = parsed.searchParams.get("trxref") ??
+        detectedRef =
+          parsed.searchParams.get("trxref") ??
           parsed.searchParams.get("reference") ??
           reference;
       } catch {
@@ -69,7 +76,6 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
 
   const injectedJS = `
     (function() {
-      // Prevent Paystack from closing via postMessage in some scenarios
       var originalOpen = window.open;
       window.open = function(url) {
         window.location.href = url;
@@ -86,7 +92,6 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
       onRequestClose={handleClose}
     >
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {/* Header */}
         <View style={[styles.header, { paddingTop: topPadding + 6, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <View style={[styles.secureIcon, { backgroundColor: colors.accent }]}>
@@ -99,7 +104,6 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
           </Pressable>
         </View>
 
-        {/* Paystack badge */}
         <View style={[styles.poweredBar, { backgroundColor: colors.accent }]}>
           <Feather name="shield" size={12} color={colors.primary} />
           <Text style={[styles.poweredText, { color: colors.primary }]}>
@@ -107,7 +111,6 @@ export default function PaystackWebView({ visible, authorizationUrl, reference, 
           </Text>
         </View>
 
-        {/* WebView */}
         {authorizationUrl ? (
           <WebView
             ref={webViewRef}

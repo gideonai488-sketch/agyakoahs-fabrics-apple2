@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -27,6 +28,24 @@ const HERO_HEIGHT = Math.min(height * 0.58, 480);
 const THUMB_W = 110;
 const THUMB_H = 160;
 
+const LAST_CATEGORY_KEY = "agyakoahs_last_category";
+
+// Seeded shuffle — same seed = same order; changes daily
+function seededShuffle<T>(array: T[], seed: number): T[] {
+  const arr = [...array];
+  let s = seed;
+  for (let i = arr.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getDailySeed(): number {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -39,9 +58,27 @@ export default function HomeScreen() {
   const [dbProducts, setDbProducts] = useState<typeof PRODUCTS>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [lastBrowsedCategory, setLastBrowsedCategory] = useState<string | null>(null);
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const dailySeed = getDailySeed();
+
+  // Load last browsed category from storage
+  useEffect(() => {
+    AsyncStorage.getItem(LAST_CATEGORY_KEY).then((val) => {
+      if (val && val !== "all") setLastBrowsedCategory(val);
+    }).catch(() => {});
+  }, []);
+
+  // Save category when user switches
+  const handleCategoryChange = useCallback((catId: string) => {
+    setSelectedCategory(catId);
+    if (catId !== "all") {
+      setLastBrowsedCategory(catId);
+      AsyncStorage.setItem(LAST_CATEGORY_KEY, catId).catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     fetchProducts()
@@ -65,6 +102,7 @@ export default function HomeScreen() {
               category: r.category ?? local.category,
               description: r.description ?? local.description,
               badge: r.badge ?? null,
+              _isNew: i < 6, // first 6 from db are newest (sorted by created_at desc)
             };
           });
           setDbProducts(mapped);
@@ -76,22 +114,42 @@ export default function HomeScreen() {
 
   const allProducts = dbProducts.length > 0 ? dbProducts : PRODUCTS;
 
-  // Pick top 5 products for the hero — prefer badged/hot products, then fall back to first items
+  // Hero: prefer badged/hot products
   const heroProducts = useMemo(() => {
     const badged = allProducts.filter((p: any) => p.badge === "hot" || p.badge === "dr-recommended");
     const pool = badged.length >= 3 ? badged : allProducts;
     return pool.slice(0, 5);
   }, [allProducts]);
 
-  // Top 8 by sold count for the Trending Now row
+  // Trending: top 8 by sold count
   const trending = useMemo(() => {
     return [...allProducts].sort((a, b) => (b.sold ?? 0) - (a.sold ?? 0)).slice(0, 8);
   }, [allProducts]);
 
-  const filteredProducts =
-    selectedCategory === "all"
-      ? allProducts
-      : allProducts.filter((p) => p.category === selectedCategory);
+  // New Arrivals: first 6 from DB (sorted created_at desc) or last 6 local items
+  const newArrivals = useMemo(() => {
+    const tagged = allProducts.filter((p: any) => p._isNew);
+    return (tagged.length >= 3 ? tagged : allProducts.slice(-6)).slice(0, 6);
+  }, [allProducts]);
+
+  // Picks for you: based on last browsed category, daily-shuffled
+  const picksForYou = useMemo(() => {
+    const cat = lastBrowsedCategory;
+    const pool = cat
+      ? allProducts.filter((p) => p.category === cat)
+      : allProducts;
+    const shuffled = seededShuffle(pool.length >= 4 ? pool : allProducts, dailySeed + 1);
+    return shuffled.slice(0, 8);
+  }, [allProducts, lastBrowsedCategory, dailySeed]);
+
+  // Main grid: daily-shuffled within category
+  const filteredProducts = useMemo(() => {
+    const pool =
+      selectedCategory === "all"
+        ? allProducts
+        : allProducts.filter((p) => p.category === selectedCategory);
+    return seededShuffle(pool, dailySeed);
+  }, [allProducts, selectedCategory, dailySeed]);
 
   useEffect(() => {
     if (heroProducts.length === 0) return;
@@ -119,6 +177,10 @@ export default function HomeScreen() {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
     return String(n);
   }
+
+  const picksLabel = lastBrowsedCategory
+    ? `Picks for You · ${lastBrowsedCategory}`
+    : "Picks for You";
 
   const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: "#0a0a0a" },
@@ -293,28 +355,33 @@ export default function HomeScreen() {
       borderRadius: 3,
     },
 
-    trendSection: {
+    rowSection: {
       paddingTop: 20,
       paddingBottom: 4,
       backgroundColor: colors.background,
     },
-    trendHeader: {
+    rowHeader: {
       flexDirection: "row" as const,
       alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: 16,
       marginBottom: 14,
     },
-    trendTitle: {
+    rowTitle: {
       fontSize: 18,
       fontWeight: "700" as const,
       color: colors.foreground,
       fontFamily: "Inter_700Bold",
     },
-    trendSeeAll: {
+    rowSeeAll: {
       fontSize: 13,
       color: colors.primary,
       fontFamily: "Inter_500Medium",
+    },
+    rowSubtitle: {
+      fontSize: 12,
+      color: colors.mutedForeground,
+      fontFamily: "Inter_400Regular",
     },
     thumbList: { paddingHorizontal: 16, gap: 10 },
     thumbCard: {
@@ -350,6 +417,42 @@ export default function HomeScreen() {
       color: "#fff",
       fontWeight: "700" as const,
       fontFamily: "Inter_700Bold",
+    },
+    newTag: {
+      position: "absolute",
+      top: 6,
+      left: 6,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    newTagText: {
+      fontSize: 9,
+      color: "#fff",
+      fontWeight: "700" as const,
+      fontFamily: "Inter_700Bold",
+    },
+
+    newArrivalCard: {
+      width: 130,
+      borderRadius: 14,
+      overflow: "hidden" as const,
+      backgroundColor: colors.card,
+    },
+    newArrivalImage: { width: 130, height: 130 },
+    newArrivalInfo: { padding: 8 },
+    newArrivalName: {
+      fontSize: 12,
+      fontFamily: "Inter_500Medium",
+      color: colors.foreground,
+      marginBottom: 4,
+    },
+    newArrivalPrice: {
+      fontSize: 13,
+      fontWeight: "700" as const,
+      fontFamily: "Inter_700Bold",
+      color: colors.primary,
     },
 
     divider: {
@@ -416,7 +519,6 @@ export default function HomeScreen() {
             end={{ x: 0, y: 1 }}
           />
 
-          {/* Floating top nav */}
           <View style={s.floatingBar}>
             <Text style={s.brandName}>
               Agyakoahs<Text style={s.brandDot}> Fabrics</Text>
@@ -442,7 +544,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Hero content */}
           <View style={s.heroContent}>
             <View style={s.trendingBadge}>
               <Text style={s.trendingNum}>#{heroIndex + 1}</Text>
@@ -498,7 +599,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Hero dots */}
           <View style={s.heroDots}>
             {heroProducts.map((_, i) => (
               <View
@@ -515,12 +615,15 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        {/* ── TRENDING NOW ROW ── */}
-        <View style={s.trendSection}>
-          <View style={s.trendHeader}>
-            <Text style={s.trendTitle}>Trending Now</Text>
+        {/* ── TRENDING NOW ── */}
+        <View style={s.rowSection}>
+          <View style={s.rowHeader}>
+            <View>
+              <Text style={s.rowTitle}>Trending Now</Text>
+              <Text style={s.rowSubtitle}>Most popular picks</Text>
+            </View>
             <Pressable onPress={() => router.push("/(tabs)/categories" as never)}>
-              <Text style={s.trendSeeAll}>See all</Text>
+              <Text style={s.rowSeeAll}>See all</Text>
             </Pressable>
           </View>
           <FlatList
@@ -534,11 +637,7 @@ export default function HomeScreen() {
                 style={s.thumbCard}
                 onPress={() => router.push(`/product/${item.id}` as never)}
               >
-                <Image
-                  source={{ uri: item.image }}
-                  style={s.thumbImage}
-                  contentFit="cover"
-                />
+                <Image source={{ uri: item.image }} style={s.thumbImage} contentFit="cover" />
                 <LinearGradient
                   colors={["transparent", "rgba(0,0,0,0.75)"]}
                   style={s.thumbGrad}
@@ -556,8 +655,76 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* ── NEW ARRIVALS ── */}
+        {newArrivals.length > 0 && (
+          <View style={[s.rowSection, { paddingTop: 20, paddingBottom: 16 }]}>
+            <View style={s.rowHeader}>
+              <View>
+                <Text style={s.rowTitle}>New Arrivals</Text>
+                <Text style={s.rowSubtitle}>Just added to the store</Text>
+              </View>
+              <Pressable onPress={() => router.push("/(tabs)/categories" as never)}>
+                <Text style={s.rowSeeAll}>See all</Text>
+              </Pressable>
+            </View>
+            <FlatList
+              data={newArrivals}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+              keyExtractor={(item) => `new-${item.id}`}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={s.newArrivalCard}
+                  onPress={() => router.push(`/product/${item.id}` as never)}
+                >
+                  <View>
+                    <Image source={{ uri: item.image }} style={s.newArrivalImage} contentFit="cover" />
+                    <View style={s.newTag}>
+                      <Text style={s.newTagText}>NEW</Text>
+                    </View>
+                  </View>
+                  <View style={s.newArrivalInfo}>
+                    <Text style={s.newArrivalName} numberOfLines={2}>{item.name}</Text>
+                    <Text style={s.newArrivalPrice}>GH₵{item.price.toFixed(2)}</Text>
+                  </View>
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
+
+        {/* ── PICKS FOR YOU ── */}
+        {picksForYou.length > 0 && (
+          <View style={[s.rowSection, { paddingTop: 4, paddingBottom: 4 }]}>
+            <View style={s.rowHeader}>
+              <View>
+                <Text style={s.rowTitle}>Picks for You</Text>
+                <Text style={s.rowSubtitle}>
+                  {lastBrowsedCategory ? `Based on your interest in ${lastBrowsedCategory}` : "Curated daily for you"}
+                </Text>
+              </View>
+            </View>
+            <FlatList
+              data={picksForYou}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+              keyExtractor={(item) => `pick-${item.id}`}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => router.push(`/product/${item.id}` as never)}
+                  style={{ width: 140 }}
+                >
+                  <ProductCard product={item} staffPick={(item as any).badge === "dr-recommended"} />
+                </Pressable>
+              )}
+            />
+          </View>
+        )}
+
         {/* ── CATEGORY FILTER + GRID ── */}
-        <View style={[s.catSection, { paddingBottom: 8 }]}>
+        <View style={[s.catSection, { paddingBottom: 8, marginTop: 12 }]}>
           <View style={s.catContainer}>
             <ScrollView
               horizontal
@@ -576,7 +743,7 @@ export default function HomeScreen() {
                         borderColor: isSelected ? colors.primary : colors.border,
                       },
                     ]}
-                    onPress={() => setSelectedCategory(cat.id)}
+                    onPress={() => handleCategoryChange(cat.id)}
                   >
                     <Feather
                       name={cat.icon as never}
