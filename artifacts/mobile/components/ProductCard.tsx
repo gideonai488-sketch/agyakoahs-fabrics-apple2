@@ -220,8 +220,8 @@ export default function ProductCard({ product, staffPick }: ProductCardProps) {
           </View>
           <View style={styles.priceRow}>
             <View style={styles.priceGroup}>
-              <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-              <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
+              <Text style={styles.price}>GH₵{product.price.toFixed(2)}</Text>
+              <Text style={styles.originalPrice}>GH₵{product.originalPrice.toFixed(2)}</Text>
             </View>
             <Pressable style={styles.addBtn} onPress={handleAddToCart}>
               <Feather name="plus" size={16} color="#fff" />

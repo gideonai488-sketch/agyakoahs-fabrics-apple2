@@ -30,7 +30,7 @@ const THUMB_H = 160;
 
 const LAST_CATEGORY_KEY = "agyakoahs_last_category";
 
-// Seeded shuffle — same seed = same order; changes daily
+// Seeded shuffle — deterministic for a given seed
 function seededShuffle<T>(array: T[], seed: number): T[] {
   const arr = [...array];
   let s = seed;
@@ -42,9 +42,9 @@ function seededShuffle<T>(array: T[], seed: number): T[] {
   return arr;
 }
 
-function getDailySeed(): number {
-  const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+// Session seed — changes every time the app is opened (new random value each mount)
+function getSessionSeed(): number {
+  return Math.floor(Math.random() * 2147483647);
 }
 
 export default function HomeScreen() {
@@ -62,7 +62,9 @@ export default function HomeScreen() {
 
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
-  const dailySeed = getDailySeed();
+
+  // New seed every session — products reorder each time the app is opened
+  const sessionSeed = React.useRef(getSessionSeed()).current;
 
   // Load last browsed category from storage
   useEffect(() => {
@@ -132,24 +134,32 @@ export default function HomeScreen() {
     return (tagged.length >= 3 ? tagged : allProducts.slice(-6)).slice(0, 6);
   }, [allProducts]);
 
-  // Picks for you: based on last browsed category, daily-shuffled
+  // Picks for you: based on last browsed category, weighted by rating + sold + session shuffle
   const picksForYou = useMemo(() => {
     const cat = lastBrowsedCategory;
     const pool = cat
       ? allProducts.filter((p) => p.category === cat)
       : allProducts;
-    const shuffled = seededShuffle(pool.length >= 4 ? pool : allProducts, dailySeed + 1);
+    const base = pool.length >= 4 ? pool : allProducts;
+    // Score: rating * 10 + log(sold+1) * 5, then session-shuffle top half
+    const scored = [...base].sort((a, b) => {
+      const sa = (a.rating ?? 0) * 10 + Math.log((a.sold ?? 0) + 1) * 5;
+      const sb = (b.rating ?? 0) * 10 + Math.log((b.sold ?? 0) + 1) * 5;
+      return sb - sa;
+    });
+    const topHalf = scored.slice(0, Math.ceil(scored.length * 0.6));
+    const shuffled = seededShuffle(topHalf, sessionSeed + 1);
     return shuffled.slice(0, 8);
-  }, [allProducts, lastBrowsedCategory, dailySeed]);
+  }, [allProducts, lastBrowsedCategory, sessionSeed]);
 
-  // Main grid: daily-shuffled within category
+  // Main grid: session-shuffled within category (new order each app open)
   const filteredProducts = useMemo(() => {
     const pool =
       selectedCategory === "all"
         ? allProducts
         : allProducts.filter((p) => p.category === selectedCategory);
-    return seededShuffle(pool, dailySeed);
-  }, [allProducts, selectedCategory, dailySeed]);
+    return seededShuffle(pool, sessionSeed);
+  }, [allProducts, selectedCategory, sessionSeed]);
 
   useEffect(() => {
     if (heroProducts.length === 0) return;
