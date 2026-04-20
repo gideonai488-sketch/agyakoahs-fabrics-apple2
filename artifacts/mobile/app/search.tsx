@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dimensions,
   Platform,
@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ProductCard from "@/components/ProductCard";
 import { useColors } from "@/hooks/useColors";
-import { searchProducts } from "@/data/products";
+import { fetchProducts } from "@/lib/db";
 
 const TRENDING = ["Wireless Earbuds", "Summer Dress", "Smart Watch", "Yoga Mat", "Sneakers", "Laptop Stand"];
 
@@ -23,9 +23,36 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const [query, setQuery] = useState("");
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
-  const results = query.length > 1 ? searchProducts(query) : [];
+  useEffect(() => {
+    fetchProducts().then((rows) => {
+      setAllProducts(rows.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        price: r.price,
+        originalPrice: r.original_price ?? r.price,
+        discount: r.original_price > 0 ? Math.round(((r.original_price - r.price) / r.original_price) * 100) : 0,
+        image: r.image_url ?? "",
+        images: [r.image_url ?? ""],
+        rating: r.rating ?? 4.5,
+        sold: r.sold ?? 0,
+        category: r.category ?? "",
+        description: r.description ?? "",
+        badge: r.badge ?? null,
+      })));
+    }).catch(() => {});
+  }, []);
+
+  const q = query.toLowerCase().trim();
+  const results = q.length > 1
+    ? allProducts.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+      )
+    : [];
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

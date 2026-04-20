@@ -19,7 +19,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { getProductById, PRODUCTS } from "@/data/products";
 import { fetchProductById, fetchProducts, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/db";
 
 const { width } = Dimensions.get("window");
@@ -52,9 +51,7 @@ export default function ProductDetailScreen() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [liked, setLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [relatedProducts, setRelatedProducts] = useState<typeof PRODUCTS>([]);
-
-  const localProduct = getProductById(id ?? "");
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
   const [product, setProduct] = useState<{
     id: string;
@@ -77,38 +74,28 @@ export default function ProductDetailScreen() {
       setIsLoading(true);
       try {
         const dbProd = await fetchProductById(id ?? "");
-        const imageUrl = dbProd?.image_url || localProduct?.image || getFallbackImage(id ?? "");
-        const origPrice = dbProd?.original_price ?? localProduct?.originalPrice ?? dbProd?.price ?? 0;
-        const price = dbProd?.price ?? localProduct?.price ?? 0;
-        const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : localProduct?.discount ?? 0;
+        const imageUrl = dbProd?.image_url || getFallbackImage(id ?? "");
+        const origPrice = dbProd?.original_price ?? dbProd?.price ?? 0;
+        const price = dbProd?.price ?? 0;
+        const disc = origPrice > 0 ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
 
         setProduct({
           id: dbProd?.id ?? id ?? "",
-          name: dbProd?.name ?? localProduct?.name ?? "",
+          name: dbProd?.name ?? "",
           price,
           originalPrice: origPrice,
           discount: disc,
           image: imageUrl,
-          images: localProduct?.images ? [imageUrl, ...localProduct.images.slice(1)] : [imageUrl],
-          rating: dbProd?.rating ?? localProduct?.rating ?? 4.5,
-          sold: dbProd?.sold ?? localProduct?.sold ?? 0,
-          description: dbProd?.description ?? localProduct?.description ?? "",
-          sizes: localProduct?.sizes,
-          colors: localProduct?.colors,
-          freeShipping: localProduct?.freeShipping ?? false,
+          images: [imageUrl],
+          rating: dbProd?.rating ?? 4.5,
+          sold: dbProd?.sold ?? 0,
+          description: dbProd?.description ?? "",
+          sizes: undefined,
+          colors: undefined,
+          freeShipping: false,
         });
-
-        if (localProduct?.sizes?.[0]) setSelectedSize(localProduct.sizes[0]);
-        if (localProduct?.colors?.[0]) setSelectedColor(localProduct.colors[0]);
       } catch {
-        if (localProduct) {
-          setProduct({
-            ...localProduct,
-            originalPrice: localProduct.originalPrice,
-          });
-          if (localProduct.sizes?.[0]) setSelectedSize(localProduct.sizes[0]);
-          if (localProduct.colors?.[0]) setSelectedColor(localProduct.colors[0]);
-        }
+        // DB fetch failed — show nothing, user can go back
       } finally {
         setIsLoading(false);
       }
@@ -125,15 +112,13 @@ export default function ProductDetailScreen() {
     load();
     checkWishlist();
 
-    // Load related products from same category
+    // Load related products from DB
     fetchProducts().then((rows) => {
       if (!rows || rows.length === 0) return;
-      const mapped = rows.map((r: any, i: number) => {
-        const local = PRODUCTS[i % PRODUCTS.length];
-        const imgUrl = r.image_url || local.image;
+      const mapped = rows.map((r: any) => {
+        const imgUrl = r.image_url ?? "";
         const origPrice = r.original_price ?? r.price;
         return {
-          ...local,
           id: r.id,
           name: r.name,
           price: r.price,
@@ -141,20 +126,14 @@ export default function ProductDetailScreen() {
           discount: origPrice > 0 ? Math.round(((origPrice - r.price) / origPrice) * 100) : 0,
           image: imgUrl,
           images: [imgUrl],
-          rating: r.rating ?? local.rating,
-          sold: r.sold ?? local.sold,
-          category: r.category ?? local.category,
+          rating: r.rating ?? 4.5,
+          sold: r.sold ?? 0,
+          category: r.category ?? "",
         };
       });
-      const currentCat = localProduct?.category;
-      const related = mapped
-        .filter((p: any) => p.id !== id && (!currentCat || p.category === currentCat))
-        .slice(0, 8);
-      setRelatedProducts(related.length >= 2 ? related : mapped.filter((p: any) => p.id !== id).slice(0, 8));
-    }).catch(() => {
-      const fallback = PRODUCTS.filter((p) => p.id !== id && p.category === (localProduct?.category ?? "")).slice(0, 6);
-      setRelatedProducts(fallback.length >= 2 ? fallback : PRODUCTS.filter((p) => p.id !== id).slice(0, 6));
-    });
+      const related = mapped.filter((p: any) => p.id !== id).slice(0, 8);
+      setRelatedProducts(related);
+    }).catch(() => {});
   }, [id]);
 
   async function toggleWishlist() {

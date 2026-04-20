@@ -5,6 +5,7 @@ import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   FlatList,
@@ -20,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
-import { CATEGORIES, PRODUCTS } from "@/data/products";
+import { CATEGORIES } from "@/data/products";
 import { fetchProducts } from "@/lib/db";
 
 const { width, height } = Dimensions.get("window");
@@ -55,7 +56,7 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [heroIndex, setHeroIndex] = useState(0);
   const fadeAnim = React.useRef(new Animated.Value(1)).current;
-  const [dbProducts, setDbProducts] = useState<typeof PRODUCTS>([]);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [lastBrowsedCategory, setLastBrowsedCategory] = useState<string | null>(null);
@@ -87,24 +88,22 @@ export default function HomeScreen() {
       .then((rows) => {
         if (rows && rows.length > 0) {
           const mapped = rows.map((r: any, i: number) => {
-            const local = PRODUCTS[i % PRODUCTS.length];
             const origPrice = r.original_price ?? r.price;
-            const imgUrl = r.image_url || local.image;
+            const imgUrl = r.image_url ?? "";
             return {
-              ...local,
               id: r.id,
               name: r.name,
               price: r.price,
               originalPrice: origPrice,
               discount: origPrice > 0 ? Math.round(((origPrice - r.price) / origPrice) * 100) : 0,
               image: imgUrl,
-              images: [imgUrl, ...(imgUrl !== local.image ? [local.image] : local.images.slice(1))],
-              rating: r.rating ?? local.rating,
-              sold: r.sold ?? local.sold,
-              category: r.category ?? local.category,
-              description: r.description ?? local.description,
+              images: [imgUrl],
+              rating: r.rating ?? 4.5,
+              sold: r.sold ?? 0,
+              category: r.category ?? "",
+              description: r.description ?? "",
               badge: r.badge ?? null,
-              _isNew: i < 6, // first 6 from db are newest (sorted by created_at desc)
+              _isNew: i < 6,
             };
           });
           setDbProducts(mapped);
@@ -114,7 +113,7 @@ export default function HomeScreen() {
       .finally(() => setLoadingProducts(false));
   }, []);
 
-  const allProducts = dbProducts.length > 0 ? dbProducts : PRODUCTS;
+  const allProducts = dbProducts;
 
   // Hero: prefer badged/hot products
   const heroProducts = useMemo(() => {
@@ -181,7 +180,7 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [heroIndex, heroProducts.length]);
 
-  const currentHero = heroProducts[heroIndex] ?? heroProducts[0] ?? PRODUCTS[0];
+  const currentHero = heroProducts[heroIndex] ?? heroProducts[0];
 
   function formatSold(n: number) {
     if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -510,6 +509,28 @@ export default function HomeScreen() {
       gap: 12,
     },
   });
+
+  if (loadingProducts) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (loadError || allProducts.length === 0) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 32 }}>
+        <Feather name="alert-circle" size={48} color={colors.mutedForeground} />
+        <Text style={{ fontSize: 18, fontWeight: "700" as const, color: colors.foreground, marginTop: 16, fontFamily: "Inter_700Bold", textAlign: "center" }}>
+          Could not load products
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 8, fontFamily: "Inter_400Regular", textAlign: "center" }}>
+          Check your connection and try again.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
