@@ -25,6 +25,17 @@ import {
   initializePaystackPayment,
   verifyPaystackPayment,
 } from "@/lib/db";
+import { PAYSTACK_PUBLIC_KEY, generateReference, toPesewas } from "@/lib/paystack";
+
+function loadPaystackScript(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).PaystackPop) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = "https://js.paystack.co/v1/inline.js";
+    s.onload = () => resolve();
+    document.body.appendChild(s);
+  });
+}
 
 const STEPS = ["Address", "Payment", "Review"];
 
@@ -150,19 +161,33 @@ export default function CheckoutScreen() {
       if (paymentMethod === "paystack") {
         setPlacingLabel("Opening Payment…");
 
-        // Call Supabase Edge Function — it holds the secret key
-        const payment = await initializePaystackPayment(order.id, user.email, orderTotal);
-        const { authorization_url, reference } = payment;
-
-        setCurrentOrderId(order.id);
-        setCurrentRef(reference);
-
         if (Platform.OS === "web") {
-          // On web, redirect to Paystack checkout in the same window
+          // Web: use Paystack inline popup — stays fully in the app, no redirect
+          const ref = generateReference();
+          setCurrentOrderId(order.id);
+          setCurrentRef(ref);
           setIsPlacing(false);
-          window.location.href = authorization_url;
+          await loadPaystackScript();
+          (window as any).PaystackPop.setup({
+            key: PAYSTACK_PUBLIC_KEY,
+            email: user.email,
+            amount: toPesewas(orderTotal),
+            currency: "GHS",
+            ref,
+            label: "Agyakoahs Fabrics",
+            callback: (response: any) => {
+              handlePaymentSuccess(response.reference ?? ref);
+            },
+            onClose: () => {
+              handlePaymentCancel();
+            },
+          }).openIframe();
         } else {
-          // Native: open Paystack checkout in in-app WebView
+          // Native: call edge function then open Paystack in in-app WebView
+          const payment = await initializePaystackPayment(order.id, user.email, orderTotal);
+          const { authorization_url, reference } = payment;
+          setCurrentOrderId(order.id);
+          setCurrentRef(reference);
           setPayUrl(authorization_url);
           setIsPlacing(false);
           setWebViewVisible(true);
