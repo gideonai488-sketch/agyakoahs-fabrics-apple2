@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { checkIsAdmin } from "@/lib/db";
+import { checkIsAdmin, deleteAccount as dbDeleteAccount } from "@/lib/db";
 import type { Session, User as SbUser } from "@supabase/supabase-js";
 
 interface User {
@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -86,6 +87,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }
 
+  async function deleteAccount() {
+    await dbDeleteAccount();
+    await supabase.auth.signOut();
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -97,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         logout,
+        deleteAccount,
       }}
     >
       {children}

@@ -20,7 +20,8 @@ import { fetchMyOrders, fetchWishlist } from "@/lib/db";
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, deleteAccount } = useAuth();
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -55,6 +56,43 @@ export default function ProfileScreen() {
         },
       },
     ]);
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all your data including orders and wishlist. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Are you absolutely sure?",
+              `You are about to delete the account for ${user?.email}. All your data will be lost forever.`,
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Yes, Delete Forever",
+                  style: "destructive",
+                  onPress: async () => {
+                    setIsDeletingAccount(true);
+                    try {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      await deleteAccount();
+                    } catch {
+                      setIsDeletingAccount(false);
+                      Alert.alert("Error", "Could not delete your account. Please try again or contact support.");
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
   }
 
   const initials = user?.name
@@ -174,13 +212,25 @@ export default function ProfileScreen() {
         ))}
 
         {isAuthenticated && (
-          <Pressable
-            onPress={handleLogout}
-            style={[styles.logoutBtn, { backgroundColor: colors.card }]}
-          >
-            <Feather name="log-out" size={20} color={colors.destructive} />
-            <Text style={[styles.logoutText, { color: colors.destructive }]}>Sign Out</Text>
-          </Pressable>
+          <>
+            <Pressable
+              onPress={handleLogout}
+              style={[styles.logoutBtn, { backgroundColor: colors.card }]}
+            >
+              <Feather name="log-out" size={20} color={colors.destructive} />
+              <Text style={[styles.logoutText, { color: colors.destructive }]}>Sign Out</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isDeletingAccount}
+              style={styles.deleteAccountBtn}
+            >
+              <Text style={styles.deleteAccountText}>
+                {isDeletingAccount ? "Deleting account…" : "Delete Account"}
+              </Text>
+            </Pressable>
+          </>
         )}
 
         <View style={{ height: bottomPadding + 110 }} />
@@ -212,4 +262,6 @@ const styles = StyleSheet.create({
   menuDesc: { fontSize: 11, fontFamily: "Inter_400Regular" },
   logoutBtn: { flexDirection: "row" as const, alignItems: "center", justifyContent: "center", gap: 10, padding: 16, marginTop: 8 },
   logoutText: { fontSize: 15, fontWeight: "600" as const, fontFamily: "Inter_600SemiBold" },
+  deleteAccountBtn: { alignItems: "center", paddingVertical: 14, marginTop: 4, marginBottom: 8 },
+  deleteAccountText: { fontSize: 13, fontFamily: "Inter_400Regular", color: "#aaa", textDecorationLine: "underline" as const },
 });

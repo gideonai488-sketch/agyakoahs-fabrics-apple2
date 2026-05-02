@@ -122,3 +122,8 @@ export async function verifyPaystackPayment(reference: string) {
   if (error) throw error;
   return data as { status: string; paid: boolean };
 }
+
+export async function deleteAccount() {
+  const { error } = await supabase.functions.invoke("delete-account");
+  if (error) throw error;
+}
