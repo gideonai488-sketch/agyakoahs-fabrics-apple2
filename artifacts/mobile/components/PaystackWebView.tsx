@@ -10,7 +10,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { WebView, WebViewNavigation, WebViewRequest } from "react-native-webview";
+import { WebView, WebViewNavigation } from "react-native-webview";
+import type { ShouldStartLoadRequest } from "react-native-webview/lib/WebViewTypes";
 
 import { useColors } from "@/hooks/useColors";
 
@@ -73,7 +74,7 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
     detectCallback(navState.url ?? "");
   }
 
-  function handleShouldStartLoadWithRequest(request: WebViewRequest): boolean {
+  function handleShouldStartLoadWithRequest(request: ShouldStartLoadRequest): boolean {
     const reqUrl = request.url ?? "";
 
     if (detectCallback(reqUrl)) {
