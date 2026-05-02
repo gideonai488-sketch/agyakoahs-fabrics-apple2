@@ -1,58 +1,64 @@
-# Workspace
+# Agyakoahs Fabrics
 
-## Overview
+An e-commerce platform for fabrics built as a React Native / Expo mobile app with a supporting Express API server.
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+## Architecture
 
-## Stack
+This is a **pnpm monorepo** with the following workspaces:
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+```
+artifacts/
+  mobile/        # Expo React Native app (main customer interface)
+  api-server/    # Express 5 backend (Paystack proxy, health checks)
+  mockup-sandbox/ # Vite-based UI component preview environment
+lib/
+  api-client-react/  # Auto-generated React hooks (via Orval)
+  api-spec/          # OpenAPI/Swagger specification
+  api-zod/           # Zod schemas generated from API spec
+  db/                # Drizzle ORM schema, migrations, database client
+scripts/             # Workspace utility scripts
+```
 
-## Artifacts
+## Tech Stack
 
-### Shopping App (mobile) — `/`
-Full-featured Temu-style shopping mobile app built with Expo/React Native.
+- **Frontend:** React Native + Expo SDK 54 (runs as web via react-native-web)
+- **Navigation:** expo-router (file-based routing)
+- **Backend:** Express 5 + Node.js
+- **Database:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **ORM:** Drizzle ORM (for the local Replit PostgreSQL via `DATABASE_URL`)
+- **Payments:** Paystack (handled via Supabase Edge Functions)
+- **Data Fetching:** TanStack Query
+- **Package Manager:** pnpm workspaces
 
-**Features:**
-- Splash screen (orange/red gradient with app icon)
-- Auth flow: login + signup screens
-- Bottom navbar with 5 tabs: Home, Categories, Cart, Orders, Profile
-- Home: banner carousel, flash sale timer, category filters, product grid
-- Categories: hierarchical browsing with subcategory chips
-- Product detail: image gallery, size/color selectors, reviews, add-to-cart
-- Cart: quantity controls, order summary, free shipping threshold
-- Checkout: 3-step flow (Address → Payment → Review → Order placed)
-- Order success: animated confirmation screen
-- Search: trending terms, live search with results
-- Profile: user info, stats, menu, sign in/out
+## Running the App
 
-**State Management:**
-- Auth: AsyncStorage-backed context (`context/AuthContext.tsx`)
-- Cart: AsyncStorage-backed context (`context/CartContext.tsx`)
-- Products: local mock data (`data/products.ts`) with 12 products
+The **Start application** workflow runs the Expo mobile app in web mode on port 8081:
 
-**Design:**
-- Brand colors: Orange #FF4500 primary
-- Font: Inter (400/500/600/700)
-- Custom app icon + splash + banner images generated via AI
+```bash
+cd artifacts/mobile && PORT=8081 pnpm run dev
+```
 
-### API Server — `/api`
-Express 5 server (backend). Currently only has health check endpoint.
+## Key Files
 
-## Key Commands
+- `artifacts/mobile/lib/supabase.ts` — Supabase client + type definitions
+- `artifacts/mobile/lib/db.ts` — Data access functions (products, orders, wishlist)
+- `artifacts/mobile/lib/paystack.ts` — Paystack helpers (reference generation, inline HTML)
+- `artifacts/mobile/context/AuthContext.tsx` — Supabase Auth context (login, signup, logout)
+- `artifacts/mobile/context/CartContext.tsx` — Shopping cart state
+- `artifacts/api-server/src/routes/paystack.ts` — Payment initialization/verification endpoints
+- `lib/db/src/index.ts` — Drizzle database client (uses `DATABASE_URL`)
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
+## Environment Variables
 
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Replit-managed) |
+
+Supabase credentials are embedded in `artifacts/mobile/lib/supabase.ts` (anon key — safe for client use). Paystack payments are processed through Supabase Edge Functions and require no additional secrets here.
+
+## Ports
+
+| Local Port | External Port | Usage |
+|---|---|---|
+| 8081 | 80 | Expo mobile app (web preview) |
+| 8080 | 8080 | API server |
