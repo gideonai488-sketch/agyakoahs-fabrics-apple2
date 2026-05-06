@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { CATEGORIES } from "@/data/products";
 
 const CAT_COLORS = ["#FF4500", "#e91e63", "#2196f3", "#ff9800", "#9c27b0", "#4caf50", "#f44336", "#795548"];
@@ -29,6 +30,7 @@ const SUBCATEGORIES: Record<string, string[]> = {
 export default function CategoriesScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
 
   return (
@@ -36,7 +38,7 @@ export default function CategoriesScreen() {
       <View style={[styles.header, { paddingTop: topPadding + 12, backgroundColor: colors.card }]}>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Categories</Text>
       </View>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         {CATEGORIES.filter((c) => c.id !== "all").map((cat, idx) => (
           <View key={cat.id}>
             <View style={[styles.catSection, { backgroundColor: colors.card }]}>

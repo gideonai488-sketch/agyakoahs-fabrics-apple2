@@ -16,8 +16,7 @@ import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import type { Product } from "@/data/products";
 
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = (width - 36) / 2;
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface ProductCardProps {
   product: Product;
@@ -26,6 +25,8 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, staffPick }: ProductCardProps) {
   const colors = useColors();
+  const { contentWidth, numColumns } = useResponsive();
+  const CARD_WIDTH = (contentWidth - (numColumns + 1) * 12) / numColumns;
   const { addItem } = useCart();
   const [liked, setLiked] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;

@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import PaystackWebView from "@/components/PaystackWebView";
 import {
   createOrder,
@@ -47,6 +48,7 @@ const PAYMENT_METHODS = [
 export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const { items, totalPrice, totalItems, clearCart } = useCart();
   const { user } = useAuth();
 
@@ -253,7 +255,7 @@ export default function CheckoutScreen() {
         ))}
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 16 }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 16, alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         {step === 0 && (
           <View>
             <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Delivery Address</Text>

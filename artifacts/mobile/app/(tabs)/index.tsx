@@ -21,11 +21,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { CATEGORIES } from "@/data/products";
 import { fetchProducts } from "@/lib/db";
 
-const { width, height } = Dimensions.get("window");
-const HERO_HEIGHT = Math.min(height * 0.58, 480);
+const HERO_HEIGHT = 480;
 const THUMB_W = 110;
 const THUMB_H = 160;
 
@@ -51,6 +51,7 @@ function getSessionSeed(): number {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { width, isTablet, contentWidth, horizontalPadding } = useResponsive();
   const { totalItems, addItem } = useCart();
 
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -195,7 +196,7 @@ export default function HomeScreen() {
     container: { flex: 1, backgroundColor: "#0a0a0a" },
     scrollContent: { backgroundColor: colors.background },
 
-    heroWrap: { width, height: HERO_HEIGHT, position: "relative" },
+    heroWrap: { width: "100%", height: isTablet ? 540 : HERO_HEIGHT, position: "relative" },
     heroImage: { ...StyleSheet.absoluteFillObject },
     heroGrad: { ...StyleSheet.absoluteFillObject },
 
@@ -505,8 +506,10 @@ export default function HomeScreen() {
     productsGrid: {
       flexDirection: "row" as const,
       flexWrap: "wrap" as const,
-      paddingHorizontal: 12,
+      paddingHorizontal: isTablet ? 0 : 12,
       gap: 12,
+      maxWidth: contentWidth,
+      alignSelf: "center" as const,
     },
   });
 
@@ -536,7 +539,7 @@ export default function HomeScreen() {
     <View style={s.container}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         {/* ── HERO ── */}
-        <Animated.View style={[s.heroWrap, { opacity: fadeAnim }]}>
+        <Animated.View style={[s.heroWrap, { opacity: fadeAnim, alignSelf: "center", maxWidth: isTablet ? 1000 : width }]}>
           <Image
             source={{ uri: currentHero.image }}
             style={s.heroImage}
@@ -647,7 +650,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ── TRENDING NOW ── */}
-        <View style={s.rowSection}>
+        <View style={[s.rowSection, { alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
           <View style={s.rowHeader}>
             <View>
               <Text style={s.rowTitle}>Trending Now</Text>
@@ -688,7 +691,7 @@ export default function HomeScreen() {
 
         {/* ── NEW ARRIVALS ── */}
         {newArrivals.length > 0 && (
-          <View style={[s.rowSection, { paddingTop: 20, paddingBottom: 16 }]}>
+          <View style={[s.rowSection, { paddingTop: 20, paddingBottom: 16, alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
             <View style={s.rowHeader}>
               <View>
                 <Text style={s.rowTitle}>New Arrivals</Text>
@@ -727,7 +730,7 @@ export default function HomeScreen() {
 
         {/* ── PICKS FOR YOU ── */}
         {picksForYou.length > 0 && (
-          <View style={[s.rowSection, { paddingTop: 4, paddingBottom: 4 }]}>
+          <View style={[s.rowSection, { paddingTop: 4, paddingBottom: 4, alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
             <View style={s.rowHeader}>
               <View>
                 <Text style={s.rowTitle}>Picks for You</Text>
@@ -755,7 +758,7 @@ export default function HomeScreen() {
         )}
 
         {/* ── CATEGORY FILTER + GRID ── */}
-        <View style={[s.catSection, { paddingBottom: 8, marginTop: 12 }]}>
+        <View style={[s.catSection, { paddingBottom: 8, marginTop: 12, alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
           <View style={s.catContainer}>
             <ScrollView
               horizontal

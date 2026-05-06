@@ -19,9 +19,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { fetchProductById, fetchProducts, addToWishlist, removeFromWishlist, fetchWishlist } from "@/lib/db";
 
-const { width } = Dimensions.get("window");
+
 
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop",
@@ -42,6 +43,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { width, isTablet, contentWidth } = useResponsive();
   const { addItem } = useCart();
   const { user } = useAuth();
 
@@ -194,7 +196,7 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignSelf: "center", width: "100%", maxWidth: isTablet ? 900 : "100%" }}>
         <View style={{ position: "relative" }}>
           <FlatList
             data={images}
@@ -202,11 +204,11 @@ export default function ProductDetailScreen() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+              const idx = Math.round(e.nativeEvent.contentOffset.x / (isTablet ? 900 : width));
               setSelectedImage(idx);
             }}
             renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={{ width, height: width }} contentFit="cover" />
+              <Image source={{ uri: item }} style={{ width: isTablet ? 900 : width, height: isTablet ? 600 : width }} contentFit="cover" />
             )}
             keyExtractor={(_, i) => i.toString()}
           />
