@@ -19,10 +19,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet } = useResponsive();
   const { login } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -213,7 +215,7 @@ export default function LoginScreen() {
       </LinearGradient>
 
       <ScrollView
-        style={styles.formContainer}
+        style={[styles.formContainer, isTablet && { alignSelf: "center", width: "100%", maxWidth: 500, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, marginTop: 20, marginBottom: 20, elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

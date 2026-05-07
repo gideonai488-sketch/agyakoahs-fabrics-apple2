@@ -16,10 +16,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const { items, totalItems, totalPrice, updateQuantity, removeItem } = useCart();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -58,7 +60,7 @@ export default function CartScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Cart ({totalItems})</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         <View style={{ padding: 16, gap: 12 }}>
           {items.map((item) => (
             <View key={item.id} style={[styles.cartItem, { backgroundColor: colors.card }]}>
@@ -155,7 +157,7 @@ export default function CartScreen() {
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      <View style={[styles.checkoutBar, { backgroundColor: colors.card, paddingBottom: bottomPadding + 12, borderTopColor: colors.border }]}>
+      <View style={[styles.checkoutBar, { backgroundColor: colors.card, paddingBottom: bottomPadding + 12, borderTopColor: colors.border, alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
         <View style={styles.totalPreview}>
           <Text style={[styles.totalPreviewLabel, { color: colors.mutedForeground }]}>Total</Text>
           <Text style={[styles.totalPreviewValue, { color: colors.primary }]}>GH₵{orderTotal.toFixed(2)}</Text>

@@ -17,10 +17,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function PersonalInfoScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { isTablet, contentWidth } = useResponsive();
   const { user } = useAuth();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
@@ -57,7 +59,7 @@ export default function PersonalInfoScreen() {
         <View style={{ width: 34 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: bottomPadding + 100 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: bottomPadding + 100, alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         <View style={[styles.avatarSection, { backgroundColor: colors.card }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>
@@ -104,7 +106,7 @@ export default function PersonalInfoScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.bottomBar, { paddingBottom: bottomPadding + 12, backgroundColor: colors.card, borderTopColor: colors.border }]}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomPadding + 12, backgroundColor: colors.card, borderTopColor: colors.border, alignSelf: "center", width: "100%", maxWidth: contentWidth }]}>
         <Pressable
           style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: isSaving ? 0.7 : 1 }]}
           onPress={handleSave}

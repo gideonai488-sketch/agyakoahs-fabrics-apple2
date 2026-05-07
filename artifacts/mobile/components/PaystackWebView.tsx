@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView, WebViewNavigation, WebViewRequest } from "react-native-webview";
 
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 
 const CALLBACK_HOST = "agf.callback";
 
@@ -27,6 +28,7 @@ interface Props {
 export default function PaystackWebView({ visible, url, reference, onSuccess, onCancel }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
   const webViewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
   const [hasDetected, setHasDetected] = useState(false);
@@ -91,10 +93,10 @@ export default function PaystackWebView({ visible, url, reference, onSuccess, on
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle={isTablet ? "formSheet" : "pageSheet"}
       onRequestClose={handleClose}
     >
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={[{ flex: 1, backgroundColor: colors.background }, isTablet && { alignSelf: "center", width: "100%", maxWidth: 600 }]}>
         <View style={[styles.header, { paddingTop: topPadding + 6, backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <View style={styles.headerLeft}>
             <View style={[styles.secureIcon, { backgroundColor: colors.accent }]}>

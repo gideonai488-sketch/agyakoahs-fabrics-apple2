@@ -18,9 +18,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
+import { useResponsive } from "@/hooks/useResponsive";
 
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
   const { signup } = useAuth();
 
   const [name, setName] = useState("");
@@ -76,7 +78,7 @@ export default function SignupScreen() {
       </LinearGradient>
 
       <ScrollView
-        style={{ flex: 1, backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, paddingHorizontal: 24, paddingTop: 32 }}
+        style={[{ flex: 1, backgroundColor: "#fff", borderTopLeftRadius: 28, borderTopRightRadius: 28, marginTop: -20, paddingHorizontal: 24, paddingTop: 32 }, isTablet && { alignSelf: "center", width: "100%", maxWidth: 500, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, marginTop: 20, marginBottom: 20, elevation: 5, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

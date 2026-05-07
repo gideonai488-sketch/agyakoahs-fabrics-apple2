@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface Address {
   id: string;
@@ -32,6 +33,7 @@ interface Address {
 export default function AddressesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { isTablet, contentWidth } = useResponsive();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
@@ -104,7 +106,7 @@ export default function AddressesScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPadding + 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPadding + 40, alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         {addresses.length === 0 ? (
           <View style={styles.empty}>
             <Feather name="map-pin" size={48} color={colors.border} />
@@ -151,8 +153,8 @@ export default function AddressesScreen() {
       </ScrollView>
 
       {/* Add Address Modal */}
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Modal visible={showModal} animationType="slide" presentationStyle={isTablet ? "formSheet" : "pageSheet"}>
+        <KeyboardAvoidingView style={[{ flex: 1, backgroundColor: colors.background }, isTablet && { alignSelf: "center", width: "100%", maxWidth: 600 }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={[styles.modalHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <Pressable onPress={() => setShowModal(false)}>
               <Text style={{ color: colors.mutedForeground, fontSize: 15, fontFamily: "Inter_400Regular" }}>Cancel</Text>

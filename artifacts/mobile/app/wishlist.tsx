@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { fetchWishlist, removeFromWishlist, fetchProductById } from "@/lib/db";
 
 const PLACEHOLDER = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop";
@@ -35,6 +36,7 @@ type WishlistProduct = {
 export default function WishlistScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const { user } = useAuth();
   const { addItem } = useCart();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -100,7 +102,7 @@ export default function WishlistScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 16, gap: 12 }}
+        contentContainerStyle={{ padding: 16, gap: 12, alignSelf: "center", width: "100%", maxWidth: contentWidth }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadWishlist(); }} tintColor={colors.primary} />
         }

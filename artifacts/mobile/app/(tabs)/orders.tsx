@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { fetchMyOrders } from "@/lib/db";
 import type { DbOrder } from "@/lib/supabase";
 
@@ -45,6 +46,7 @@ function formatDate(iso: string) {
 export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const { user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("All");
   const [orders, setOrders] = useState<DbOrder[]>([]);
@@ -121,7 +123,7 @@ export default function OrdersScreen() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16, gap: 12 }}
+          contentContainerStyle={{ padding: 16, gap: 12, alignSelf: "center", width: "100%", maxWidth: contentWidth }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         >
           {isLoading ? (

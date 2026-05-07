@@ -15,11 +15,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { useResponsive } from "@/hooks/useResponsive";
 import { fetchMyOrders, fetchWishlist } from "@/lib/db";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { isTablet, contentWidth } = useResponsive();
   const { user, isAuthenticated, logout, deleteAccount } = useAuth();
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
@@ -136,7 +138,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignSelf: "center", width: "100%", maxWidth: contentWidth }}>
         <View style={[styles.profileHeader, { paddingTop: topPadding + 20, backgroundColor: colors.card }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>{initials}</Text>
